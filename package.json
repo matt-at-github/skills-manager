@@ -1,0 +1,20 @@
+{
+  "name": "skills-manager",
+  "version": "0.1.0",
+  "description": "Local browser UI for managing Claude/Gemini/agent instruction files and skills.",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "trash": "^9.0.0"
+  }
+}

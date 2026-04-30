@@ -1,0 +1,16 @@
+{
+  "files": [
+    "~/CLAUDE.md",
+    "~/AGENTS.md",
+    "~/GEMINI.md",
+    "~/.claude/CLAUDE.md",
+    "~/.claude.json",
+    "~/.claude/settings.json"
+  ],
+  "directories": [
+    { "path": "~/.claude/skills", "extensions": [".md"] },
+    { "path": "~/.claude/agents", "extensions": [".md"] },
+    { "path": "~/.claude/commands", "extensions": [".md"] }
+  ],
+  "projectRoots": []
+}
