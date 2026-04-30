@@ -1,0 +1,10 @@
+node_modules/
+.env
+config.json
+*.log
+.DS_Store
+
+# Local-only reference artifacts (contain private data, redact before publishing)
+claude-instructions-map.html
+claude-instructions-map-2.html
+skill-editor-server.py
