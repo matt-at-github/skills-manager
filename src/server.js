@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import "dotenv/config";
 import { createLogger } from "./logger.js";
+import { check as checkRequestSecurity } from "./requestSecurity.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.resolve(__dirname, "..", "public");
@@ -50,9 +51,17 @@ async function serveStatic(req, res) {
   }
 }
 
-export function createServer() {
+export function createServer({ port = PORT } = {}) {
+  const expectedOrigin = `http://localhost:${port}`;
   return http.createServer((req, res) => {
     log.debug(req.method, req.url);
+    const sec = checkRequestSecurity(req, expectedOrigin);
+    if (!sec.ok) {
+      log.warn("rejected request", req.method, req.url, sec.reason);
+      res.writeHead(403, { "Content-Type": "text/plain" });
+      res.end(`Forbidden: ${sec.reason}`);
+      return;
+    }
     if (req.method === "GET") {
       serveStatic(req, res);
       return;
@@ -63,7 +72,7 @@ export function createServer() {
 }
 
 export function start({ port = PORT } = {}) {
-  const server = createServer();
+  const server = createServer({ port });
   server.on("error", (err) => {
     if (err.code === "EADDRINUSE") {
       log.error(
