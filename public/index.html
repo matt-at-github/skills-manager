@@ -1,24 +1,1603 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>skills-manager</title>
-    <style>
-      body {
-        font-family: system-ui, sans-serif;
-        background: #0e1116;
-        color: #d7dde5;
-        margin: 0;
-        padding: 2rem;
-      }
-      h1 { margin-top: 0; }
-      code { background: #1c2330; padding: 0.15rem 0.35rem; border-radius: 3px; }
-    </style>
-  </head>
-  <body>
-    <h1>skills-manager</h1>
-    <p>Server is running. UI lands in a later slice.</p>
-    <p>See <code>PRD.md</code> for the plan.</p>
-  </body>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>skills-manager</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<h1>Claude Instruction Map</h1>
+<p class="subtitle">All CLAUDE.md and AGENTS.md files · MCP servers and skills nested where they apply · click to expand</p>
+
+<div class="toolbar">
+  <button class="btn" onclick="expandAll()">expand all</button>
+  <button class="btn" onclick="collapseAll()">collapse all</button>
+  <div class="server-status" id="server-status">
+    <div class="server-dot" id="server-dot"></div>
+    <span id="server-status-text">checking…</span>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><span class="badge badge-claude">CLAUDE.md</span> Claude Code instructions</div>
+  <div class="legend-item"><span class="badge badge-agents">AGENTS.md</span> Agent instructions</div>
+  <div class="legend-item"><span class="badge badge-symlink">⇢ symlink</span> Points to another file</div>
+  <div class="legend-item"><span class="badge badge-global">GLOBAL</span> Applies to all sessions</div>
+  <div class="legend-item"><span class="badge badge-deprecated">DEPRECATED</span> Do not use</div>
+  <div class="legend-item"><span class="badge badge-mcp">MCP</span> MCP Server</div>
+  <div class="legend-item"><span class="badge badge-skill">SKILLS</span> Skills</div>
+</div>
+
+<div class="tree" id="tree">
+
+  <!-- ─── ~/.claude/ ─── -->
+  <div class="tree-node">
+    <div class="dir-row" onclick="toggle(this)">
+      <span class="toggle-icon">▾</span>
+      <span class="dir-label"><span class="dir-name">~/.claude/</span> <span class="badge badge-global">GLOBAL</span></span>
+    </div>
+    <div class="dir-children">
+
+      <div class="tree-node">
+        <div class="tree-row">
+          <div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/.claude/CLAUDE.md">
+              <span class="badge badge-claude">CLAUDE.md</span>
+              <span class="file-name fn-claude">CLAUDE.md</span>
+              <span class="badge badge-global">GLOBAL</span>
+              <span class="scope-tag">all sessions</span>
+            </div>
+            <div class="file-content">
+              <div class="summary-section">
+                <div class="summary-heading">WorkSystem Protection</div>
+                <div class="summary-item">Any action near work-system files → check + validate with user first</div>
+                <div class="summary-item">Never leave traces of existence in work-system-related folders</div>
+              </div>
+              <div class="summary-section">
+                <div class="summary-heading">Process Kill Gate</div>
+                <div class="summary-item">Never kill work-system processes</div>
+                <div class="summary-item">Chrome kills require user to type <code>kill chromes</code></div>
+              </div>
+              <div class="summary-section">
+                <div class="summary-heading">Chrome DevTools MCP</div>
+                <div class="summary-item">Runs via <code>~/.claude/chrome-mcp-wrapper.sh</code></div>
+                <div class="summary-item"><code>fresh</code> = profileless Chrome (default) | <code>profile</code> = attach port 9222</div>
+                <div class="summary-item">Switch via <code>/chrome-mcp</code> skill; restart required</div>
+              </div>
+              <div class="summary-section">
+                <div class="summary-heading">Preferred Tools</div>
+                <div class="summary-item">Web: WebFetch → agent-browser → screenshots (last resort)</div>
+                <div class="summary-item">PDFs: use <code>pdftotext</code>, NOT <code>Read</code> (Read loads as images)</div>
+              </div>
+              <div class="summary-section">
+                <div class="summary-heading">Subagents</div>
+                <div class="summary-item">Haiku → bulk mechanical | Sonnet → scoped research | Opus → planning/tradeoffs</div>
+              </div>
+              <div class="raw-toggle" onclick="toggleRaw(this)">show raw ▾</div>
+              <div class="raw-content"># Traicing directive.
+This is a work computer, it is very important that any action that would risk local software located at or related to work-system must be carefully checked and validated by user if anything is found.
+You must avoid leaving traces of existance on files or folders related to work-system. If anything is found user should be prompted to take action.
+
+# Process killing directive.
+You are not to kill processes related to or started from the work-system directory or a work-system string.
+Have user prompted validation to kill chrome processes. User must reply to you stating 'kill chromes', else you can not do it.
+
+# Chrome DevTools MCP
+The `chrome-devtools` MCP server runs via `~/.claude/chrome-mcp-wrapper.sh`.
+Mode controlled by `~/.claude/chrome-mcp-mode`:
+- `fresh` (default) — launches a new profileless Chrome
+- `profile` — attaches to the user's Chrome on port 9222
+
+# Preferred Tools
+## Data Fetching
+1. WebFetch: free, text-only, public pages that don't block bots.
+2. agent-browser CLI: dynamic pages, auth walls, interactive scraping. Returns accessibility tree (~90% fewer tokens than screenshots).
+3. Screenshots: last resort only.
+## PDF Files
+Use `pdftotext`, not the `Read` tool.
+
+# Subagents
+- Haiku: bulk mechanical work, no judgment needed
+- Sonnet: scoped research, code exploration, in-scope synthesis
+- Opus: planning, tradeoffs, cross-task reasoning</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MCP Servers — global -->
+      <div class="tree-node">
+        <div class="subsection-row" onclick="toggleSub(this)">
+          <span class="toggle-icon">▾</span>
+          <span class="subsection-label"><span class="badge badge-mcp">MCP</span> <span style="color:#56d364">MCP Servers</span> <span style="color:#484f58;font-size:0.68rem">global + plugins · ~/.claude.json</span></span>
+        </div>
+        <div class="subsection-children">
+
+          <div class="tree-node">
+            <div class="tree-row">
+              <div class="file-node">
+                <div class="file-header" onclick="toggleFile(this)">
+                  <span class="badge badge-mcp">MCP</span>
+                  <span class="file-name fn-mcp">chrome-devtools</span>
+                  <span class="badge badge-mcp">stdio</span>
+                  <span class="badge badge-global">global</span>
+                </div>
+                <div class="file-content">
+                  <div class="summary-section">
+                    <div class="summary-item">Runs via <code>~/.claude/chrome-mcp-wrapper.sh</code></div>
+                    <div class="summary-item">Mode: <code>~/.claude/chrome-mcp-mode</code> — <code>fresh</code> (profileless) or <code>profile</code> (port 9222)</div>
+                    <div class="summary-item">Switch via <code>/chrome-mcp</code> skill</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tree-node">
+            <div class="tree-row">
+              <div class="file-node">
+                <div class="file-header" onclick="toggleFile(this)">
+                  <span class="badge badge-mcp">MCP</span>
+                  <span class="file-name fn-mcp">trello</span>
+                  <span class="badge badge-mcp">stdio</span>
+                  <span class="badge badge-global">global</span>
+                </div>
+                <div class="file-content">
+                  <div class="summary-section">
+                    <div class="summary-item"><code>npx @example/mcp-server-tasks</code></div>
+                    <div class="summary-item">Default board: <code>0000000000000000000000aa</code></div>
+                    <div class="summary-item">Env: <code>EXAMPLE_API_KEY</code>, <code>EXAMPLE_TOKEN</code>, <code>EXAMPLE_BOARD_ID</code></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tree-node">
+            <div class="tree-row">
+              <div class="file-node">
+                <div class="file-header" onclick="toggleFile(this)">
+                  <span class="badge badge-mcp">MCP</span>
+                  <span class="file-name fn-mcp">notion</span>
+                  <span class="badge badge-mcp">stdio</span>
+                  <span class="badge badge-global">global</span>
+                </div>
+                <div class="file-content">
+                  <div class="summary-section">
+                    <div class="summary-item"><code>npx @example/mcp-server-docs</code></div>
+                    <div class="summary-item">Auth: Bearer token in <code>EXAMPLE_MCP_HEADERS</code></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tree-node">
+            <div class="tree-row">
+              <div class="file-node">
+                <div class="file-header" onclick="toggleFile(this)">
+                  <span class="badge badge-mcp">MCP</span>
+                  <span class="file-name fn-mcp">vercel</span>
+                  <span class="badge badge-http">http</span>
+                  <span class="badge badge-global">enabled</span>
+                </div>
+                <div class="file-content">
+                  <div class="summary-section">
+                    <div class="summary-item">Plugin: <code>deploy-platform@example-marketplace</code> v0.40.0</div>
+                    <div class="summary-item">URL: <code>https://mcp.vercel.com</code> (OAuth on first connect)</div>
+                    <div class="summary-item">Capabilities: search docs, list projects/deployments, inspect logs</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tree-node">
+            <div class="tree-row">
+              <div class="file-node">
+                <div class="file-header" onclick="toggleFile(this)">
+                  <span class="badge badge-mcp">MCP</span>
+                  <span class="file-name fn-mcp" style="color:#484f58">telegram</span>
+                  <span class="badge badge-mcp">stdio</span>
+                  <span class="badge badge-disabled">disabled</span>
+                </div>
+                <div class="file-content">
+                  <div class="summary-section">
+                    <div class="summary-item">Plugin: <code>messenger@example-marketplace</code> v0.0.6</div>
+                    <div class="summary-item"><code>bun run start</code> from plugin root</div>
+                    <div class="summary-item">Disabled in <code>enabledPlugins</code> config</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Skills — global -->
+      <div class="tree-node">
+        <div class="subsection-row" onclick="toggleSub(this)">
+          <span class="toggle-icon">▾</span>
+          <span class="subsection-label"><span class="badge badge-skill">SKILLS</span> <span style="color:#a5b4fc">Skills</span> <span style="color:#484f58;font-size:0.68rem">built-in + plugins · click to expand</span></span>
+        </div>
+        <div class="subsection-children">
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill">update-config</span><span class="scope-tag">built-in</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Configure settings.json — hooks, permissions, env vars, automated behaviors.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill">keybindings-help</span><span class="scope-tag">built-in</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Customize keyboard shortcuts in ~/.claude/keybindings.json.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill">simplify</span><span class="scope-tag">built-in</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Review changed code for reuse, quality, efficiency — then fix issues.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill">fewer-permission-prompts</span><span class="scope-tag">built-in</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Scan transcripts for common tool calls and add allowlist to settings.json.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill">loop</span><span class="scope-tag">built-in</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Run a prompt or slash command on a recurring interval.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill">schedule</span><span class="scope-tag">built-in</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Create/update/list scheduled remote agents on cron schedule.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill">claude-api</span><span class="scope-tag">built-in</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Build/debug/optimize Claude API / Anthropic SDK apps. Includes prompt caching.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/.claude/skills/markdown-tables/SKILL.md">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill">markdown-tables</span><span class="scope-tag">built-in</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Create and format markdown tables — syntax, alignment, escaping.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/.claude/skills/tdd/SKILL.md">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill">tdd</span><span class="scope-tag">built-in</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Test-driven development — red → green → refactor loop.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/.claude/skills/to-issues/SKILL.md">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill">to-issues</span><span class="scope-tag">built-in</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Break plan/spec/PRD into independently-grabbable GitHub issues.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/.claude/skills/find-skills/SKILL.md">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill">find-skills</span><span class="scope-tag">built-in</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Discover and install agent skills from the marketplace.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/.claude/skills/web-design-guidelines/SKILL.md">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill">web-design-guidelines</span><span class="scope-tag">built-in</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Review UI code for Web Interface Guidelines, accessibility, UX compliance.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/.claude/skills/grill-me/SKILL.md">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill">grill-me</span><span class="scope-tag">built-in</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Relentless interview about a plan/design until shared understanding reached.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/.claude/skills/markdown-formatter/SKILL.md">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill">markdown-formatter</span><span class="scope-tag">built-in</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Format markdown files per best practices and style guidelines.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/.claude/skills/chrome-mcp/SKILL.md">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill">chrome-mcp</span><span class="scope-tag">built-in</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Switch Chrome DevTools MCP between fresh (profileless) and profile (port 9222) modes.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/.claude/skills/seo/SKILL.md">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill">seo</span><span class="scope-tag">built-in</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Optimize for search — meta tags, structured data, sitemaps, ranking.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/.claude/skills/improve-codebase-architecture/SKILL.md">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill">improve-codebase-architecture</span><span class="scope-tag">built-in</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Explore codebase for architectural improvement opportunities, testability.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/.claude/skills/to-prd/SKILL.md">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill">to-prd</span><span class="scope-tag">built-in</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Turn conversation context into a PRD and submit as GitHub issue.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill">init</span><span class="scope-tag">built-in</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Initialize a new CLAUDE.md with codebase documentation.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill">review</span><span class="scope-tag">built-in</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Review a pull request.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill">security-review</span><span class="scope-tag">built-in</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Complete a security review of pending changes on the current branch.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill">statusline-setup</span><span class="scope-tag">built-in</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Configure the Claude Code status line setting.</div></div></div>
+          </div></div></div>
+            </div>
+          </div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/.claude/plugins/marketplaces/caveman/skills/caveman/SKILL.md">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill plugin-skill">caveman</span><span class="scope-tag">plugin · caveman@caveman</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Ultra-compressed communication mode (~75% token reduction). Levels: lite, full, ultra, wenyan.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/.claude/plugins/marketplaces/caveman/skills/caveman-help/SKILL.md">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill plugin-skill">caveman-help</span><span class="scope-tag">plugin · caveman@caveman</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Quick-reference card for all caveman modes, skills, commands.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/.claude/plugins/marketplaces/caveman/skills/caveman-review/SKILL.md">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill plugin-skill">caveman-review</span><span class="scope-tag">plugin · caveman@caveman</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Ultra-compressed PR code review comments — one line per issue.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/.claude/plugins/marketplaces/caveman/skills/caveman-commit/SKILL.md">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill plugin-skill">caveman-commit</span><span class="scope-tag">plugin · caveman@caveman</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Ultra-compressed commit message generator. Conventional Commits, subject ≤50 chars.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/.claude/plugins/marketplaces/caveman/skills/compress/SKILL.md">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill plugin-skill">compress</span><span class="scope-tag">plugin · caveman@caveman</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Compress natural language memory files (CLAUDE.md, todos) into caveman format to save tokens.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill plugin-skill">frontend-design</span><span class="scope-tag">plugin · frontend-design@example-marketplace</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Create distinctive, production-grade frontend interfaces with high design quality.</div></div></div>
+          </div></div></div>
+
+          <div class="tree-node"><div class="tree-row"><div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/.claude/skills/pastebin-crud/SKILL.md">
+              <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill plugin-skill">pastebin-crud</span><span class="scope-tag">plugin · local/pastebin</span>
+            </div>
+            <div class="file-content"><div class="summary-section"><div class="summary-item">Create, read, update, delete pastes on Pastebin.com.</div></div></div>
+          </div></div></div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─── ~/.config/nvim/ ─── -->
+  <div class="tree-node">
+    <div class="dir-row" onclick="toggle(this)">
+      <span class="toggle-icon">▾</span>
+      <span class="dir-label"><span class="dir-name">~/.config/nvim/</span></span>
+    </div>
+    <div class="dir-children">
+      <div class="tree-node">
+        <div class="tree-row">
+          <div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/.config/nvim/CLAUDE.md">
+              <span class="badge badge-claude">CLAUDE.md</span>
+              <span class="file-name fn-claude">CLAUDE.md</span>
+              <span class="scope-tag">session log / nvim config</span>
+            </div>
+            <div class="file-content">
+              <div class="summary-section">
+                <div class="summary-heading">Note</div>
+                <div class="summary-item">Session log, not directives. Historical decisions only.</div>
+              </div>
+              <div class="summary-section">
+                <div class="summary-heading">Formatter</div>
+                <div class="summary-item">Biome primary (lineWidth 120); Prettier fallback for SCSS/HTML/MD/YAML</div>
+                <div class="summary-item">Biome preserves grouping parens; prettier removes them</div>
+              </div>
+              <div class="summary-section">
+                <div class="summary-heading">LSP Scope</div>
+                <div class="summary-item">vtsls scoped to <code>demo-projects</code> + <code>demo-solutions</code> only</div>
+                <div class="summary-item">Prevents indexing 14G work-system tree</div>
+              </div>
+              <div class="summary-section">
+                <div class="summary-heading">Known Issues</div>
+                <div class="summary-item">Treesitter vim parser fix (line 113 comment) — lost on updates, reapply with git stash</div>
+              </div>
+              <div class="raw-toggle" onclick="toggleRaw(this)">show raw ▾</div>
+              <div class="raw-content"># Neovim Configuration Notes - Session log (not directives)
+Key decisions:
+- Biome primary formatter (lineWidth: 120), Prettier backup for SCSS/HTML/MD/YAML
+- vtsls root_dir scoped to demo-projects and demo-solutions only
+- Treesitter vim parser fix: comment out line 113 in highlights.scm (lost on updates)
+- Dynamic plugin loading: markdown/tailwind only load when needed
+- eslint → eslint_d (daemon, no cold-start per save)
+- Memory cap: typescript.tsserver.maxTsServerMemory = 8192</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── ~/.local/share/nvim/lazy/gitsigns.nvim/ ─── -->
+  <div class="tree-node">
+    <div class="dir-row" onclick="toggle(this)">
+      <span class="toggle-icon">▾</span>
+      <span class="dir-label"><span class="dir-name">~/.local/share/nvim/lazy/gitsigns.nvim/</span> <span style="color:#484f58;font-size:0.7rem">(plugin)</span></span>
+    </div>
+    <div class="dir-children">
+      <div class="tree-node">
+        <div class="tree-row">
+          <div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/.local/share/nvim/lazy/gitsigns.nvim/AGENTS.md">
+              <span class="badge badge-agents">AGENTS.md</span>
+              <span class="file-name fn-agents">AGENTS.md</span>
+              <span class="scope-tag">gitsigns plugin repo</span>
+            </div>
+            <div class="file-content">
+              <div class="summary-section">
+                <div class="summary-heading">Build &amp; Test</div>
+                <div class="summary-item"><code>make build</code> → Stylua + regen help before commit</div>
+                <div class="summary-item"><code>make test [FILTER=pattern]</code> → functional suite</div>
+                <div class="summary-item"><code>make test-010</code> / <code>make test-nightly</code> → version matrix</div>
+              </div>
+              <div class="summary-section">
+                <div class="summary-heading">Coding Style</div>
+                <div class="summary-item">LuaCATS type annotations required</div>
+                <div class="summary-item">2-space indent, 100-char columns, single quotes</div>
+                <div class="summary-item">Run <code>make format</code> + <code>make emmylua-check</code> after any change</div>
+              </div>
+              <div class="summary-section">
+                <div class="summary-heading">Commits</div>
+                <div class="summary-item">Conventional Commits: <code>&lt;type&gt;(&lt;scope&gt;): &lt;verb phrase&gt;</code></div>
+                <div class="summary-item">Subject ≤ 72 chars</div>
+              </div>
+              <div class="raw-toggle" onclick="toggleRaw(this)">show raw ▾</div>
+              <div class="raw-content"># Repository Guidelines (gitsigns.nvim)
+- Lua: LuaCATS annotations, 2-space indent, 100-char cols, single quotes
+- make build: Stylua + regen help
+- make test [FILTER]: functional suite via nvim-test
+- make test-010/011/nightly: version matrix
+- make doc / make doc-check: regenerate help
+- make format-check / format: lint or autoformat
+- Every bug fix needs a spec that reproduces regression
+- Commits: &lt;type&gt;(&lt;scope&gt;): &lt;verb phrase&gt;, subject ≤ 72 chars</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── ~/ (home) ─── -->
+  <div class="tree-node">
+    <div class="dir-row" onclick="toggle(this)">
+      <span class="toggle-icon">▾</span>
+      <span class="dir-label"><span class="dir-name">~/</span> <span style="color:#484f58;font-size:0.7rem">(/home/user)</span></span>
+    </div>
+    <div class="dir-children">
+
+      <div class="tree-node">
+        <div class="tree-row">
+          <div class="file-node">
+            <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/CLAUDE.md">
+              <span class="badge badge-claude">CLAUDE.md</span>
+              <span class="file-name fn-claude">CLAUDE.md</span>
+              <span class="scope-tag">home dir sessions</span>
+            </div>
+            <div class="file-content">
+              <div class="summary-section">
+                <div class="summary-heading">Browser Automation</div>
+                <div class="summary-item">Use chrome-devtools MCP; reuse if running, else start new</div>
+                <div class="summary-item">Keep browser visible so user can see actions</div>
+                <div class="summary-item">Max timeout: 1000ms</div>
+              </div>
+              <div class="raw-toggle" onclick="toggleRaw(this)">show raw ▾</div>
+              <div class="raw-content"># Browser Automation
+- use chrome dev tools mcp server for navigation. If it is already running reuse it, else start a new one.
+- Make sure the browser is visible as to let the user see what you are doing
+- chrome dev tools timeouts should be set to a maximum of 1 second (1000ms)
+
+## Chrome MCP Mode
+Use the `/chrome-mcp` skill to switch between `fresh` and `profile` modes.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ~/workspace/ -->
+      <div class="tree-node">
+        <div class="dir-row" onclick="toggle(this)">
+          <span class="toggle-icon">▾</span>
+          <span class="dir-label"><span class="dir-name">workspace/</span></span>
+        </div>
+        <div class="dir-children">
+
+          <div class="tree-node">
+            <div class="tree-row">
+              <div class="file-node">
+                <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/workspace/CLAUDE.md">
+                  <span class="badge badge-claude">CLAUDE.md</span>
+                  <span class="file-name fn-claude">CLAUDE.md</span>
+                  <span class="scope-tag">all workspace projects</span>
+                </div>
+                <div class="file-content">
+                  <div class="summary-section">
+                    <div class="summary-heading">Secrets Policy</div>
+                    <div class="summary-item"><code>private/</code> → private GitHub repos; notify on any secret publish</div>
+                    <div class="summary-item"><code>public/</code> → block ALL secrets and sensitive data</div>
+                  </div>
+                  <div class="summary-section">
+                    <div class="summary-heading">PR Management</div>
+                    <div class="summary-item">Create PRs: <code>pr-create-tool</code> (not <code>gh pr create</code>)</div>
+                    <div class="summary-item">Push to open PR: <code>pr-push-tool</code></div>
+                    <div class="summary-item">Wait for 3 agent reviews: reviewer-a, reviewer-b, reviewer-c</div>
+                    <div class="summary-item">Then: <code>gh pr view &lt;N&gt; --comments</code></div>
+                    <div class="summary-item">Reviewing only (not creating): use standard <code>gh</code> commands</div>
+                  </div>
+                  <div class="raw-toggle" onclick="toggleRaw(this)">show raw ▾</div>
+                  <div class="raw-content"># Secrets and sensitive data management, folder based.
+Projects within the private folder are private repos, on github.
+Notify user if any secret is being published on repos under the private folder.
+Projects within the public folder are public repos on github.
+Make sure no secrets or sensitive data are published on any repo under public.
+
+# PR Management (Haiku/Sonnet/Opus models)
+When creating PRs, use `pr-create-tool` command (not standard `gh`).
+When pushing to existing open PR, use `pr-push-tool` command.
+After running either command, wait for all three agent reviews:
+  - reviewer-a
+  - reviewer-b
+  - reviewer-c
+Once all three review messages appear, check PR comments with: `gh pr view &lt;PR_NUMBER&gt; --comments`
+When reviewing a PR (not creating), use standard `gh` commands.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- workspace project MCP -->
+          <div class="tree-node">
+            <div class="subsection-row" onclick="toggleSub(this)">
+              <span class="toggle-icon">▾</span>
+              <span class="subsection-label"><span class="badge badge-mcp">MCP</span> <span style="color:#56d364">Project MCP</span> <span style="color:#484f58;font-size:0.68rem">overrides global</span></span>
+            </div>
+            <div class="subsection-children">
+              <div class="tree-node"><div class="tree-row"><div class="file-node">
+                <div class="file-header" onclick="toggleFile(this)">
+                  <span class="badge badge-mcp">MCP</span><span class="file-name fn-mcp">notion</span><span class="badge badge-mcp">stdio</span><span class="scope-tag">workspace/</span>
+                </div>
+                <div class="file-content"><div class="summary-section">
+                  <div class="summary-item"><code>npx @example/mcp-server-docs</code></div>
+                  <div class="summary-item">Same auth token as global. Project-scoped entry in <code>.mcp.json</code>.</div>
+                </div></div>
+              </div></div></div>
+            </div>
+          </div>
+
+          <!-- workspace/project-beta/ -->
+          <div class="tree-node">
+            <div class="dir-row" onclick="toggle(this)">
+              <span class="toggle-icon">▾</span>
+              <span class="dir-label"><span class="dir-name">project-beta/</span></span>
+            </div>
+            <div class="dir-children">
+              <div class="tree-node">
+                <div class="tree-row">
+                  <div class="file-node">
+                    <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/workspace/project-beta/CLAUDE.md">
+                      <span class="badge badge-claude">CLAUDE.md</span>
+                      <span class="file-name fn-claude">CLAUDE.md</span>
+                      <span class="scope-tag">project-beta project</span>
+                    </div>
+                    <div class="file-content">
+                      <div class="summary-section">
+                        <div class="summary-heading">Development</div>
+                        <div class="summary-item">All dev requests → use <code>example-author/skills/tdd</code> skill</div>
+                      </div>
+                      <div class="summary-section">
+                        <div class="summary-heading">Issue Treatment</div>
+                        <div class="summary-item">Issue done = all PR comments validated + PR merged</div>
+                        <div class="summary-item">"Pull issue N" → evaluate context keep/compact first, advise user</div>
+                      </div>
+                      <div class="summary-section">
+                        <div class="summary-heading">PR Management</div>
+                        <div class="summary-item">Claude models: <code>pr-create-tool</code> / <code>pr-push-tool</code></div>
+                        <div class="summary-item">Wait for reviewer-a, reviewer-b, reviewer-c reviews</div>
+                      </div>
+                      <div class="raw-toggle" onclick="toggleRaw(this)">show raw ▾</div>
+                      <div class="raw-content">Any development request should use the skill example-author/skills/tdd.
+
+# Issue treatment
+An issue is completed when all the comments on a PR are validated, once that point is reached merge the PR.
+
+## Plan presenting
+Pull the following issue numerically given, read it and evaluate whether the current context is worth keeping or compacting and the prompt of its compaction or to start clean. Let the user now about your advice.
+
+# PR Management
+## reviewer-a, reviewer-b or reviewer-c:
+When reviewing a PR, should use standard gh commands.
+## Claude Haiku, Claude Sonet, Claude Opus only:
+When creating PRs, use `pr-create-tool` command.
+When pushing on an existing opened PR, use `pr-push-tool` command.
+Wait until you see "&lt;agent-name&gt; review completed" for all three agents before proceeding.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- workspace/private/ -->
+          <div class="tree-node">
+            <div class="dir-row" onclick="toggle(this)">
+              <span class="toggle-icon">▾</span>
+              <span class="dir-label"><span class="dir-name">private/</span></span>
+            </div>
+            <div class="dir-children">
+
+              <!-- claude-skills/ symlink mirror -->
+              <div class="tree-node">
+                <div class="dir-row" onclick="toggle(this)">
+                  <span class="toggle-icon">▾</span>
+                  <span class="dir-label"><span class="dir-name">claude-skills/</span> <span style="color:#7c3aed;font-size:0.68rem">symlink mirror</span></span>
+                </div>
+                <div class="dir-children">
+
+                  <div class="tree-node">
+                    <div class="tree-row">
+                      <div class="file-node">
+                        <div class="file-header" onclick="toggleFile(this)">
+                          <span class="badge badge-symlink">⇢ symlink</span>
+                          <span class="file-name fn-symlink">CLAUDE.md</span>
+                          <span class="symlink-arrow">→</span><span class="symlink-target">~/CLAUDE.md</span>
+                        </div>
+                        <div class="file-content"><div class="summary-section"><div class="summary-item">Symlink to <code>~/CLAUDE.md</code>. See home dir entry above.</div></div></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="tree-node">
+                    <div class="dir-row" onclick="toggle(this)">
+                      <span class="toggle-icon">▾</span>
+                      <span class="dir-label"><span class="dir-name">.config/nvim/</span></span>
+                    </div>
+                    <div class="dir-children">
+                      <div class="tree-node">
+                        <div class="tree-row">
+                          <div class="file-node">
+                            <div class="file-header" onclick="toggleFile(this)">
+                              <span class="badge badge-symlink">⇢ symlink</span>
+                              <span class="file-name fn-symlink">CLAUDE.md</span>
+                              <span class="symlink-arrow">→</span><span class="symlink-target">~/.config/nvim/CLAUDE.md</span>
+                            </div>
+                            <div class="file-content"><div class="summary-section"><div class="summary-item">Symlink to <code>~/.config/nvim/CLAUDE.md</code>. See nvim config entry above.</div></div></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="tree-node">
+                    <div class="dir-row" onclick="toggle(this)">
+                      <span class="toggle-icon">▾</span>
+                      <span class="dir-label"><span class="dir-name">workspace/project-alpha/</span></span>
+                    </div>
+                    <div class="dir-children">
+                      <div class="tree-node">
+                        <div class="tree-row">
+                          <div class="file-node">
+                            <div class="file-header" onclick="toggleFile(this)">
+                              <span class="badge badge-symlink">⇢ symlink</span>
+                              <span class="file-name fn-symlink">CLAUDE.md</span>
+                              <span class="symlink-arrow">→</span><span class="symlink-target">broken (target missing)</span>
+                            </div>
+                            <div class="file-content"><div class="summary-section"><div class="summary-item" style="color:#f85149">Broken symlink — target does not exist on disk.</div></div></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="tree-node">
+                    <div class="dir-row" onclick="toggle(this)">
+                      <span class="toggle-icon">▾</span>
+                      <span class="dir-label"><span class="dir-name">workspace/project-epsilon/</span></span>
+                    </div>
+                    <div class="dir-children">
+                      <div class="tree-node">
+                        <div class="tree-row">
+                          <div class="file-node">
+                            <div class="file-header" onclick="toggleFile(this)">
+                              <span class="badge badge-symlink">⇢ symlink</span>
+                              <span class="file-name fn-symlink">CLAUDE.md</span>
+                              <span class="symlink-arrow">→</span><span class="symlink-target">broken (target missing)</span>
+                            </div>
+                            <div class="file-content"><div class="summary-section"><div class="summary-item" style="color:#f85149">Broken symlink — target does not exist on disk.</div></div></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="tree-node">
+                    <div class="dir-row" onclick="toggle(this)">
+                      <span class="toggle-icon">▾</span>
+                      <span class="dir-label"><span class="dir-name">company-a/</span></span>
+                    </div>
+                    <div class="dir-children">
+
+                      <div class="tree-node">
+                        <div class="tree-row">
+                          <div class="file-node">
+                            <div class="file-header" onclick="toggleFile(this)">
+                              <span class="badge badge-symlink">⇢ symlink</span>
+                              <span class="file-name fn-symlink">CLAUDE.md</span>
+                              <span class="symlink-arrow">→</span><span class="symlink-target">~/company-a/CLAUDE.md</span>
+                            </div>
+                            <div class="file-content"><div class="summary-section"><div class="summary-item">Symlink to <code>~/company-a/CLAUDE.md</code>. See company-a entry below.</div></div></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="tree-node">
+                        <div class="dir-row" onclick="toggle(this)">
+                          <span class="toggle-icon">▾</span>
+                          <span class="dir-label"><span class="dir-name">archive/app/</span></span>
+                        </div>
+                        <div class="dir-children">
+                          <div class="tree-node">
+                            <div class="tree-row">
+                              <div class="file-node">
+                                <div class="file-header" onclick="toggleFile(this)">
+                                  <span class="badge badge-symlink">⇢ symlink</span>
+                                  <span class="file-name fn-symlink">CLAUDE.md</span>
+                                  <span class="symlink-arrow">→</span><span class="symlink-target">broken (target missing)</span>
+                                </div>
+                                <div class="file-content"><div class="summary-section"><div class="summary-item" style="color:#f85149">Broken symlink — target does not exist on disk.</div></div></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="tree-node">
+                        <div class="dir-row" onclick="toggle(this)">
+                          <span class="toggle-icon">▾</span>
+                          <span class="dir-label"><span class="dir-name">backend-app/</span></span>
+                        </div>
+                        <div class="dir-children">
+                          <div class="tree-node">
+                            <div class="tree-row">
+                              <div class="file-node">
+                                <div class="file-header" onclick="toggleFile(this)">
+                                  <span class="badge badge-symlink">⇢ symlink</span>
+                                  <span class="file-name fn-symlink">CLAUDE.md</span>
+                                  <span class="symlink-arrow">→</span><span class="symlink-target">broken (target missing)</span>
+                                </div>
+                                <div class="file-content"><div class="summary-section"><div class="summary-item" style="color:#f85149">Broken symlink — target does not exist on disk.</div></div></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- project-alpha/ -->
+              <div class="tree-node">
+                <div class="dir-row" onclick="toggle(this)">
+                  <span class="toggle-icon">▾</span>
+                  <span class="dir-label"><span class="dir-name">project-alpha/</span></span>
+                </div>
+                <div class="dir-children">
+
+                  <div class="tree-node">
+                    <div class="tree-row">
+                      <div class="file-node">
+                        <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/workspace/private/project-alpha/CLAUDE.md">
+                          <span class="badge badge-claude">CLAUDE.md</span>
+                          <span class="file-name fn-claude">CLAUDE.md</span>
+                          <span class="scope-tag">project-alpha project</span>
+                        </div>
+                        <div class="file-content">
+                          <div class="summary-section">
+                            <div class="summary-heading">Trello Board</div>
+                            <div class="summary-item">Board ID: <code>1111111111111111111111bb</code></div>
+                            <div class="summary-item">Active: TODO, TO FIX | Skip: DONE</div>
+                          </div>
+                          <div class="summary-section">
+                            <div class="summary-heading">Workflow</div>
+                            <div class="summary-item">check board → discuss → work → test → commit → update card → move to DONE</div>
+                            <div class="summary-item">Card comment format: <code>✅ Completed - [summary]. Commit: [hash]</code></div>
+                          </div>
+                          <div class="raw-toggle" onclick="toggleRaw(this)">show raw ▾</div>
+                          <div class="raw-content"># ProjectAlpha - Project Configuration
+Board ID: 1111111111111111111111bb
+Lists: TODO (list-id-todo), TO FIX (list-id-tofix), DONE (list-id-done) - skip by default
+Workflow: check board → discuss → work → test → commit → update card</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- project-alpha MCP -->
+                  <div class="tree-node">
+                    <div class="subsection-row" onclick="toggleSub(this)">
+                      <span class="toggle-icon">▾</span>
+                      <span class="subsection-label"><span class="badge badge-mcp">MCP</span> <span style="color:#56d364">Project MCP</span></span>
+                    </div>
+                    <div class="subsection-children">
+                      <div class="tree-node"><div class="tree-row"><div class="file-node">
+                        <div class="file-header" onclick="toggleFile(this)">
+                          <span class="badge badge-mcp">MCP</span><span class="file-name fn-mcp">trello</span><span class="badge badge-mcp">stdio</span><span class="scope-tag">project-alpha (both repos)</span>
+                        </div>
+                        <div class="file-content"><div class="summary-section">
+                          <div class="summary-item"><code>npx @example/mcp-server-tasks</code></div>
+                          <div class="summary-item">Board: <code>EXAMPLE_BOARD_DEMO</code> env var</div>
+                          <div class="summary-item">Also in <code>company-a/project-alpha/.mcp.json</code></div>
+                        </div></div>
+                      </div></div></div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- project-gamma/ -->
+              <div class="tree-node">
+                <div class="dir-row" onclick="toggle(this)">
+                  <span class="toggle-icon">▾</span>
+                  <span class="dir-label"><span class="dir-name">project-gamma/</span></span>
+                </div>
+                <div class="dir-children">
+
+                  <div class="tree-node">
+                    <div class="tree-row">
+                      <div class="file-node">
+                        <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/workspace/private/project-gamma/AGENTS.md">
+                          <span class="badge badge-agents">AGENTS.md</span>
+                          <span class="file-name fn-agents">AGENTS.md</span>
+                          <span class="scope-tag">project-gamma project</span>
+                        </div>
+                        <div class="file-content">
+                          <div class="summary-section">
+                            <div class="summary-heading">Convex Backend</div>
+                            <div class="summary-item">Always read <code>convex/_generated/ai/guidelines.md</code> first</div>
+                            <div class="summary-item">Install skills: <code>npx convex ai-files install</code></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="tree-node">
+                    <div class="tree-row">
+                      <div class="file-node">
+                        <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/workspace/private/project-gamma/CLAUDE.md">
+                          <span class="badge badge-claude">CLAUDE.md</span>
+                          <span class="file-name fn-claude">CLAUDE.md</span>
+                          <span class="scope-tag">project-gamma project</span>
+                        </div>
+                        <div class="file-content">
+                          <div class="summary-section"><div class="summary-item">Same content as AGENTS.md (Convex backend instructions).</div></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- project-gamma skills -->
+                  <div class="tree-node">
+                    <div class="subsection-row" onclick="toggleSub(this)">
+                      <span class="toggle-icon">▾</span>
+                      <span class="subsection-label"><span class="badge badge-skill">SKILLS</span> <span style="color:#a5b4fc">Project Skills</span></span>
+                    </div>
+                    <div class="subsection-children">
+                      <div class="tree-node"><div class="tree-row"><div class="file-node">
+                        <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/workspace/private/project-gamma/.agents/skills/convex/SKILL.md">
+                          <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill project-skill">convex</span><span class="scope-tag">project-gamma</span>
+                        </div>
+                        <div class="file-content"><div class="summary-section"><div class="summary-item">Routes general Convex requests to the right project skill.</div></div></div>
+                      </div></div></div>
+                      <div class="tree-node"><div class="tree-row"><div class="file-node">
+                        <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/workspace/private/project-gamma/.agents/skills/convex-migration-helper/SKILL.md">
+                          <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill project-skill">convex-migration-helper</span><span class="scope-tag">project-gamma</span>
+                        </div>
+                        <div class="file-content"><div class="summary-section"><div class="summary-item">Plan Convex schema/data migrations with widen-migrate-narrow.</div></div></div>
+                      </div></div></div>
+                      <div class="tree-node"><div class="tree-row"><div class="file-node">
+                        <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/workspace/private/project-gamma/.agents/skills/convex-quickstart/SKILL.md">
+                          <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill project-skill">convex-quickstart</span><span class="scope-tag">project-gamma</span>
+                        </div>
+                        <div class="file-content"><div class="summary-section"><div class="summary-item">Create or add Convex to an app, env vars, first npx convex dev.</div></div></div>
+                      </div></div></div>
+                      <div class="tree-node"><div class="tree-row"><div class="file-node">
+                        <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/workspace/private/project-gamma/.agents/skills/convex-create-component/SKILL.md">
+                          <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill project-skill">convex-create-component</span><span class="scope-tag">project-gamma</span>
+                        </div>
+                        <div class="file-content"><div class="summary-section"><div class="summary-item">Build reusable Convex components with isolated tables.</div></div></div>
+                      </div></div></div>
+                      <div class="tree-node"><div class="tree-row"><div class="file-node">
+                        <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/workspace/private/project-gamma/.agents/skills/convex-setup-auth/SKILL.md">
+                          <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill project-skill">convex-setup-auth</span><span class="scope-tag">project-gamma</span>
+                        </div>
+                        <div class="file-content"><div class="summary-section"><div class="summary-item">Set up Convex auth, identity mapping, access control.</div></div></div>
+                      </div></div></div>
+                      <div class="tree-node"><div class="tree-row"><div class="file-node">
+                        <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/workspace/private/project-gamma/.agents/skills/convex-performance-audit/SKILL.md">
+                          <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill project-skill">convex-performance-audit</span><span class="scope-tag">project-gamma</span>
+                        </div>
+                        <div class="file-content"><div class="summary-section"><div class="summary-item">Audit Convex performance — reads, subscriptions, write contention.</div></div></div>
+                      </div></div></div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- project-delta/ -->
+              <div class="tree-node">
+                <div class="dir-row" onclick="toggle(this)">
+                  <span class="toggle-icon">▾</span>
+                  <span class="dir-label"><span class="dir-name">project-delta/</span></span>
+                </div>
+                <div class="dir-children">
+
+                  <div class="tree-node">
+                    <div class="tree-row">
+                      <div class="file-node">
+                        <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/workspace/private/project-delta/CLAUDE.md">
+                          <span class="badge badge-claude">CLAUDE.md</span>
+                          <span class="file-name fn-claude">CLAUDE.md</span>
+                          <span class="scope-tag">project-delta project</span>
+                        </div>
+                        <div class="file-content">
+                          <div class="summary-section">
+                            <div class="summary-heading">Investment Profile</div>
+                            <div class="summary-item">Age: [redacted] | Horizon: [horizon-yr] | Assets: $XXk USD</div>
+                            <div class="summary-item">Risk: Moderate ([risk-tolerance] OK) | USD: [fx-channel] via local broker</div>
+                            <div class="summary-item">Savings: $XXX/mo | Tax: [local-tax-status]</div>
+                          </div>
+                          <div class="summary-section">
+                            <div class="summary-heading">Every Action Plan Must Include</div>
+                            <div class="summary-item">Explicit R:R table per trade (entry / stop / target prices)</div>
+                            <div class="summary-item">Stop loss AND invalidation stated separately and precisely</div>
+                            <div class="summary-item">Risk factors: earnings, [macro-event], macro catalysts within holding period</div>
+                          </div>
+                          <div class="raw-toggle" onclick="toggleRaw(this)">show raw ▾</div>
+                          <div class="raw-content">Investment Profile (completed YYYY-MM-DD):
+- Age: [redacted], Retirement: [retire-age] ([horizon-yr])
+- Monthly savings: $XXX USD | Total investable: $XX,XXX USD
+- Tax: [local-tax-status] | Risk: Moderate ([risk-tolerance] OK)
+- USD access: [fx-channel] via local broker | Foreign accounts: None
+
+Action plan requirements:
+- Explicit R:R ratio: entry, stop, target, ratio — as table per trade
+- Stop loss vs invalidation: both stated separately and precisely
+- Risk factors: flag earnings, [macro-event], macro events within holding period</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- project-delta skills -->
+                  <div class="tree-node">
+                    <div class="subsection-row" onclick="toggleSub(this)">
+                      <span class="toggle-icon">▾</span>
+                      <span class="subsection-label"><span class="badge badge-skill">SKILLS</span> <span style="color:#a5b4fc">Project Skills</span></span>
+                    </div>
+                    <div class="subsection-children">
+                      <div class="tree-node"><div class="tree-row"><div class="file-node">
+                        <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/workspace/private/project-delta/.claude/skills/portfolio-action-plan/SKILL.md">
+                          <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill project-skill">portfolio-action-plan</span><span class="scope-tag">project-delta</span>
+                        </div>
+                        <div class="file-content"><div class="summary-section"><div class="summary-item">Generate structured Portfolio Action Plan document.</div></div></div>
+                      </div></div></div>
+                      <div class="tree-node"><div class="tree-row"><div class="file-node">
+                        <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/workspace/private/project-delta/.agents/skills/technical-analysis/SKILL.md">
+                          <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill project-skill">technical-analysis</span><span class="scope-tag">project-delta</span>
+                        </div>
+                        <div class="file-content"><div class="summary-section"><div class="summary-item">Price action, chart patterns, Wyckoff/Dow theory, indicators.</div></div></div>
+                      </div></div></div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- project-epsilon/ -->
+              <div class="tree-node">
+                <div class="dir-row" onclick="toggle(this)">
+                  <span class="toggle-icon">▾</span>
+                  <span class="dir-label"><span class="dir-name">project-epsilon/</span></span>
+                </div>
+                <div class="dir-children">
+
+                  <div class="tree-node">
+                    <div class="tree-row">
+                      <div class="file-node">
+                        <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/workspace/private/project-epsilon/AGENTS.md">
+                          <span class="badge badge-agents">AGENTS.md</span>
+                          <span class="file-name fn-agents">AGENTS.md</span>
+                          <span class="scope-tag">project-epsilon project</span>
+                        </div>
+                        <div class="file-content">
+                          <div class="summary-section">
+                            <div class="summary-heading">Project</div>
+                            <div class="summary-item">image-source Pin → Pixel Art Sprite Generator (TypeScript backend)</div>
+                            <div class="summary-item">Stack: Fastify, sharp, cheerio, undici, vitest</div>
+                          </div>
+                          <div class="summary-section">
+                            <div class="summary-heading">Phases</div>
+                            <div class="summary-item">Setup → Core services → Image processing → API → Tests → Docker → Polish</div>
+                            <div class="summary-item">Follow TASKS.md sequentially; check acceptance criteria before each task</div>
+                          </div>
+                          <div class="summary-section">
+                            <div class="summary-heading">Rules</div>
+                            <div class="summary-item">TypeScript strict mode, no <code>any</code> types</div>
+                            <div class="summary-item">Nearest-neighbor downscaling (not bilinear/bicubic)</div>
+                            <div class="summary-item">Never expose stack traces in API responses</div>
+                            <div class="summary-item">Processing target: ≤ 3 seconds per request</div>
+                          </div>
+                          <div class="raw-toggle" onclick="toggleRaw(this)">show raw ▾</div>
+                          <div class="raw-content">image-source Pin to Pixel Art Sprite Generator — TypeScript backend
+Phases: Setup → Core services → Image processing → API → Tests → Docker → Polish
+Stack: Fastify, sharp, cheerio, undici, vitest
+Rules: strict TS, no any, nearest-neighbor downscale, no stack traces exposed
+Performance: ≤3s per request, &lt;100ms palette reduction for 32×32</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="tree-node">
+                    <div class="tree-row">
+                      <div class="file-node">
+                        <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/workspace/private/project-epsilon/CLAUDE.md">
+                          <span class="badge badge-claude">CLAUDE.md</span>
+                          <span class="file-name fn-claude">CLAUDE.md</span>
+                          <span class="scope-tag">project-epsilon project</span>
+                        </div>
+                        <div class="file-content">
+                          <div class="summary-section"><div class="summary-item">Read <code>AGENTS.md</code> in this folder first.</div></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- workspace/public/ -->
+          <div class="tree-node">
+            <div class="dir-row" onclick="toggle(this)">
+              <span class="toggle-icon">▾</span>
+              <span class="dir-label"><span class="dir-name">public/</span></span>
+            </div>
+            <div class="dir-children">
+
+              <div class="tree-node">
+                <div class="dir-row" onclick="toggle(this)">
+                  <span class="toggle-icon">▾</span>
+                  <span class="dir-label"><span class="dir-name">project-zeta/</span></span>
+                </div>
+                <div class="dir-children">
+
+                  <div class="tree-node">
+                    <div class="tree-row">
+                      <div class="file-node">
+                        <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/workspace/public/project-zeta/AGENTS.md">
+                          <span class="badge badge-agents">AGENTS.md</span>
+                          <span class="file-name fn-agents">AGENTS.md</span>
+                          <span class="scope-tag">project-zeta project</span>
+                        </div>
+                        <div class="file-content">
+                          <div class="summary-section">
+                            <div class="summary-heading">Task Completion</div>
+                            <div class="summary-item"><code>bun fmt</code>, <code>bun lint</code>, <code>bun typecheck</code> must pass before done</div>
+                            <div class="summary-item">NEVER run <code>bun test</code>; always use <code>bun run test</code> (Vitest)</div>
+                          </div>
+                          <div class="summary-section">
+                            <div class="summary-heading">Priorities</div>
+                            <div class="summary-item">Performance first. Reliability first. Correctness over convenience.</div>
+                            <div class="summary-item">No duplicate logic across files; extract shared modules</div>
+                          </div>
+                          <div class="summary-section">
+                            <div class="summary-heading">Package Roles</div>
+                            <div class="summary-item"><code>apps/server</code>: Node.js WS server, wraps Codex app-server (JSON-RPC stdio)</div>
+                            <div class="summary-item"><code>apps/web</code>: React/Vite UI, session UX, connects via WebSocket</div>
+                            <div class="summary-item"><code>packages/contracts</code>: schema-only, no runtime logic</div>
+                            <div class="summary-item"><code>packages/shared</code>: shared runtime utils, explicit subpath exports</div>
+                          </div>
+                          <div class="raw-toggle" onclick="toggleRaw(this)">show raw ▾</div>
+                          <div class="raw-content">T3 Code — minimal web GUI for coding agents (Codex, Claude)
+Task completion: bun fmt + bun lint + bun typecheck must pass
+NEVER run `bun test`; use `bun run test` (Vitest)
+Priorities: Performance, reliability, correctness over convenience
+No duplicate logic — extract shared modules
+Package roles: apps/server (WS+JSON-RPC), apps/web (React/Vite), packages/contracts (schema only), packages/shared (utils)</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="tree-node">
+                    <div class="tree-row">
+                      <div class="file-node">
+                        <div class="file-header" onclick="toggleFile(this)">
+                          <span class="badge badge-symlink">⇢ symlink</span>
+                          <span class="file-name fn-symlink">CLAUDE.md</span>
+                          <span class="symlink-arrow">→</span><span class="symlink-target">AGENTS.md</span>
+                        </div>
+                        <div class="file-content">
+                          <div class="summary-section"><div class="summary-item">Symlink to <code>AGENTS.md</code> in same directory. Same content.</div></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ~/company-a/ -->
+      <div class="tree-node">
+        <div class="dir-row" onclick="toggle(this)">
+          <span class="toggle-icon">▾</span>
+          <span class="dir-label"><span class="dir-name">company-a/</span></span>
+        </div>
+        <div class="dir-children">
+
+          <div class="tree-node">
+            <div class="tree-row">
+              <div class="file-node">
+                <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/company-a/CLAUDE.md">
+                  <span class="badge badge-claude">CLAUDE.md</span>
+                  <span class="file-name fn-claude">CLAUDE.md</span>
+                  <span class="scope-tag">all company-a projects</span>
+                </div>
+                <div class="file-content">
+                  <div class="summary-section">
+                    <div class="summary-heading">Secrets Policy</div>
+                    <div class="summary-item"><code>private/</code> → private GitHub repos; notify on any secret publish</div>
+                    <div class="summary-item"><code>public/</code> → block ALL secrets and sensitive data</div>
+                  </div>
+                  <div class="raw-toggle" onclick="toggleRaw(this)">show raw ▾</div>
+                  <div class="raw-content"># Secrets and sensitive data management, folder based.
+Projects within the private folder are private repos, on github.
+Notify user if any secret is being published on repos under the private folder.
+Projects within the public folder are public repos on github.
+Make sure no secrets or sensitive data are published on any repo under public.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- company-a workspace skill -->
+          <div class="tree-node">
+            <div class="subsection-row" onclick="toggleSub(this)">
+              <span class="toggle-icon">▾</span>
+              <span class="subsection-label"><span class="badge badge-skill">SKILLS</span> <span style="color:#a5b4fc">Workspace Skills</span></span>
+            </div>
+            <div class="subsection-children">
+              <div class="tree-node"><div class="tree-row"><div class="file-node">
+                <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/company-a/.claude/skills/github-ssh/SKILL.md">
+                  <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill project-skill">github-ssh</span><span class="scope-tag">company-a</span>
+                </div>
+                <div class="file-content"><div class="summary-section"><div class="summary-item">SSH authentication for GitHub push/pull/clone in company-a workspace.</div></div></div>
+              </div></div></div>
+            </div>
+          </div>
+
+          <!-- organization/webpage/ -->
+          <div class="tree-node">
+            <div class="dir-row" onclick="toggle(this)">
+              <span class="toggle-icon">▾</span>
+              <span class="dir-label"><span class="dir-name">organization/webpage/</span></span>
+            </div>
+            <div class="dir-children">
+              <div class="tree-node">
+                <div class="tree-row">
+                  <div class="file-node">
+                    <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/company-a/organization/webpage/AGENTS.md">
+                      <span class="badge badge-agents">AGENTS.md</span>
+                      <span class="file-name fn-agents">AGENTS.md</span>
+                      <span class="scope-tag">company-a webpage</span>
+                    </div>
+                    <div class="file-content">
+                      <div class="summary-section">
+                        <div class="summary-item">Create folder named after your model. Build landing page for company-a software factory. Use <code>DESIGN.md</code> as reference.</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- company-a/private/ -->
+          <div class="tree-node">
+            <div class="dir-row" onclick="toggle(this)">
+              <span class="toggle-icon">▾</span>
+              <span class="dir-label"><span class="dir-name">private/</span></span>
+            </div>
+            <div class="dir-children">
+
+              <div class="tree-node">
+                <div class="tree-row">
+                  <div class="file-node">
+                    <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/company-a/private/CLAUDE.md">
+                      <span class="badge badge-claude">CLAUDE.md</span>
+                      <span class="file-name fn-claude">CLAUDE.md</span>
+                      <span class="scope-tag">all company-a private projects</span>
+                    </div>
+                    <div class="file-content">
+                      <div class="summary-section">
+                        <div class="summary-heading">Permissions</div>
+                        <div class="summary-item">Trello MCP: <code>mcp__trello__*</code> allowed</div>
+                      </div>
+                      <div class="summary-section">
+                        <div class="summary-heading">Browser</div>
+                        <div class="summary-item">Chrome DevTools MCP: reuse if running, keep visible, 1s timeout</div>
+                        <div class="summary-item">webapp=5173, backend=8080, HTTPS self-signed (accept certs)</div>
+                        <div class="summary-item">If 5173 fails to load data → open 8080 tab first to accept cert</div>
+                      </div>
+                      <div class="summary-section">
+                        <div class="summary-heading">Test Environment</div>
+                        <div class="summary-item">main app = app.example.com | local = localhost:5173</div>
+                        <div class="summary-item">Test user: <code>EXAMPLE_USER</code> / <code>EXAMPLE_PASS</code></div>
+                        <div class="summary-item">Test professional: ID <code>222222222222222222222222</code></div>
+                        <div class="summary-item">"write a plan" = create markdown for another AI agent to execute</div>
+                      </div>
+                      <div class="summary-section">
+                        <div class="summary-heading">Trello Board (0000000000000000000000aa)</div>
+                        <div class="summary-item">Active: To do, On going, To bugfix</div>
+                        <div class="summary-item">Skip: Templates, Research, V2, MVP 2, Publicidad, Done, Ready for review</div>
+                        <div class="summary-item">Always pass <code>boardId</code> when calling <code>move_card</code> (required, else 400 error)</div>
+                      </div>
+                      <div class="raw-toggle" onclick="toggleRaw(this)">show raw ▾</div>
+                      <div class="raw-content">Permissions: mcp__trello__*
+Chrome DevTools MCP: reuse if running, visible, 1s timeout
+localhost: webapp=5173, backend=8080 (HTTPS self-signed, accept certs)
+main app = app.example.com | local = localhost:5173
+Test user: EXAMPLE_USER / EXAMPLE_PASS
+Test professional: 222222222222222222222222 ([trade], [city], [services])
+"write a plan" = structured markdown plan for another agent
+
+Trello board 0000000000000000000000aa:
+Active: To do, On going, To bugfix
+Skip: Templates, Research, V2, MVP 2, Publicidad, Done, Ready for review
+Always pass boardId to move_card</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- company-a/private MCP override -->
+              <div class="tree-node">
+                <div class="subsection-row" onclick="toggleSub(this)">
+                  <span class="toggle-icon">▾</span>
+                  <span class="subsection-label"><span class="badge badge-mcp">MCP</span> <span style="color:#56d364">Project MCP</span> <span style="color:#484f58;font-size:0.68rem">overrides global chrome-devtools</span></span>
+                </div>
+                <div class="subsection-children">
+                  <div class="tree-node"><div class="tree-row"><div class="file-node">
+                    <div class="file-header" onclick="toggleFile(this)">
+                      <span class="badge badge-mcp">MCP</span><span class="file-name fn-mcp">chrome-devtools</span><span class="badge badge-mcp">stdio</span><span class="scope-tag">company-a/</span>
+                    </div>
+                    <div class="file-content"><div class="summary-section">
+                      <div class="summary-item"><code>npx chrome-devtools-mcp@latest</code></div>
+                      <div class="summary-item">Profile mode (wsEndpoint hardcoded — may be stale). Inherits global trello too.</div>
+                    </div></div>
+                  </div></div></div>
+                </div>
+              </div>
+
+              <!-- archive/app/ -->
+              <div class="tree-node">
+                <div class="dir-row" onclick="toggle(this)">
+                  <span class="toggle-icon">▾</span>
+                  <span class="dir-label"><span class="dir-name">archive/app/</span></span>
+                </div>
+                <div class="dir-children">
+                  <div class="tree-node">
+                    <div class="tree-row">
+                      <div class="file-node">
+                        <div class="file-header" onclick="toggleFile(this)">
+                          <span class="badge badge-deprecated">DEPRECATED</span>
+                          <span class="file-name fn-deprecated">CLAUDE.md</span>
+                          <span class="scope-tag">archive/app</span>
+                        </div>
+                        <div class="file-content">
+                          <div class="summary-section">
+                            <div class="summary-item" style="color:#f85149">⚠ DEPRECATED. Do NOT develop here. Use frontend-app instead.</div>
+                            <div class="summary-item">Historical reference only. Only open when user explicitly says "app" folder.</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- backend-app/ -->
+              <div class="tree-node">
+                <div class="dir-row" onclick="toggle(this)">
+                  <span class="toggle-icon">▾</span>
+                  <span class="dir-label"><span class="dir-name">backend-app/</span></span>
+                </div>
+                <div class="dir-children">
+
+                  <div class="tree-node">
+                    <div class="tree-row">
+                      <div class="file-node">
+                        <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/company-a/private/backend-app/CLAUDE.md">
+                          <span class="badge badge-claude">CLAUDE.md</span>
+                          <span class="file-name fn-claude">CLAUDE.md</span>
+                          <span class="scope-tag">backend-app</span>
+                        </div>
+                        <div class="file-content">
+                          <div class="summary-section">
+                            <div class="summary-heading">Branch Policy</div>
+                            <div class="summary-item"><code>main</code> is off-limits — never commit/push/PR to main</div>
+                            <div class="summary-item">All work targets <code>develop</code>; pre-push hook + Bitbucket enforce</div>
+                            <div class="summary-item">Production releases (develop→main) done manually by human only</div>
+                          </div>
+                          <div class="summary-section">
+                            <div class="summary-heading">Bot API Key Auth</div>
+                            <div class="summary-item"><code>apiKey</code> in body, validate vs <code>EXAMPLE_BOT_KEY</code>, return 401 if invalid</div>
+                            <div class="summary-item">No JWT/passport for bot endpoints (bot has no user session)</div>
+                          </div>
+                          <div class="summary-section">
+                            <div class="summary-heading">Field Allowlist</div>
+                            <div class="summary-item">Never blindly assign <code>req.body</code> — explicit allowlist only</div>
+                            <div class="summary-item">Never allowlist: password, role, accountValidated, professionalId</div>
+                          </div>
+                          <div class="summary-section">
+                            <div class="summary-heading">Resource Ownership</div>
+                            <div class="summary-item">Always use <code>req.user._id</code> — never from body/query/params/headers</div>
+                            <div class="summary-item">Ownership mismatch → 404 | Missing → 401</div>
+                          </div>
+                          <div class="summary-section">
+                            <div class="summary-heading">Stack</div>
+                            <div class="summary-item">Node.js / Express / MongoDB / Mongoose / JWT / RESTful</div>
+                          </div>
+                          <div class="raw-toggle" onclick="toggleRaw(this)">show raw ▾</div>
+                          <div class="raw-content">Branch: main is off-limits. All work targets develop. Pre-push hook enforces.
+Bot API: apiKey in body, validate vs EXAMPLE_BOT_KEY, no JWT/passport.
+Field allowlist: never blindly assign req.body. Explicit allowlist only.
+  - Never allowlist: password, role, accountValidated, professionalId
+Resource ownership: always req.user._id. Mismatch → 404. Missing → 401.
+Stack: Node/Express/MongoDB/Mongoose/JWT</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- backend-app MCP override -->
+                  <div class="tree-node">
+                    <div class="subsection-row" onclick="toggleSub(this)">
+                      <span class="toggle-icon">▾</span>
+                      <span class="subsection-label"><span class="badge badge-mcp">MCP</span> <span style="color:#56d364">Project MCP</span> <span style="color:#484f58;font-size:0.68rem">overrides global chrome-devtools</span></span>
+                    </div>
+                    <div class="subsection-children">
+                      <div class="tree-node"><div class="tree-row"><div class="file-node">
+                        <div class="file-header" onclick="toggleFile(this)">
+                          <span class="badge badge-mcp">MCP</span><span class="file-name fn-mcp">chrome-devtools</span><span class="badge badge-mcp">stdio</span><span class="scope-tag">backend-app/</span>
+                        </div>
+                        <div class="file-content"><div class="summary-section">
+                          <div class="summary-item"><code>npx chrome-devtools-mcp@latest</code></div>
+                          <div class="summary-item">No extra args (fresh mode).</div>
+                        </div></div>
+                      </div></div></div>
+                    </div>
+                  </div>
+
+                  <!-- backend-app skill -->
+                  <div class="tree-node">
+                    <div class="subsection-row" onclick="toggleSub(this)">
+                      <span class="toggle-icon">▾</span>
+                      <span class="subsection-label"><span class="badge badge-skill">SKILLS</span> <span style="color:#a5b4fc">Project Skills</span></span>
+                    </div>
+                    <div class="subsection-children">
+                      <div class="tree-node"><div class="tree-row"><div class="file-node">
+                        <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/company-a/private/backend-app/.claude/skills/mongof/SKILL.md">
+                          <span class="badge badge-skill">SKILL</span><span class="file-name fn-skill project-skill">mongof</span><span class="scope-tag">backend-app</span>
+                        </div>
+                        <div class="file-content"><div class="summary-section"><div class="summary-item">MongoDB query constructor — scans models, validates queries, classifies risk.</div></div></div>
+                      </div></div></div>
+                    </div>
+                  </div>
+
+                  <!-- issues/ -->
+                  <div class="tree-node">
+                    <div class="dir-row" onclick="toggle(this)">
+                      <span class="toggle-icon">▾</span>
+                      <span class="dir-label"><span class="dir-name">issues/</span></span>
+                    </div>
+                    <div class="dir-children">
+                      <div class="tree-node">
+                        <div class="tree-row">
+                          <div class="file-node">
+                            <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/company-a/private/backend-app/issues/CLAUDE.md">
+                              <span class="badge badge-claude">CLAUDE.md</span>
+                              <span class="file-name fn-claude">CLAUDE.md</span>
+                              <span class="scope-tag">backend audit workflow</span>
+                            </div>
+                            <div class="file-content">
+                              <div class="summary-section">
+                                <div class="summary-heading">Quick-Win Order</div>
+                                <div class="summary-item">see private audit (redacted)</div>
+                              </div>
+                              <div class="summary-section">
+                                <div class="summary-heading">Workflow Rules</div>
+                                <div class="summary-item">Use <code>tdd</code> skill per issue (red → green → refactor)</div>
+                                <div class="summary-item">Verify before starting (may already be fixed in git)</div>
+                                <div class="summary-item">One issue = one commit. Conventional commits. Include issue number.</div>
+                                <div class="summary-item">Severity order: CRITICAL → HIGH → MEDIUM → LOW</div>
+                              </div>
+                              <div class="summary-section">
+                                <div class="summary-heading">Branch Strategy</div>
+                                <div class="summary-item">CRITICAL: one branch + one PR per issue (<code>fix/issue-N-slug</code>)</div>
+                                <div class="summary-item">HIGH: themed topic branches (auth-hardening, infra-hardening, etc.)</div>
+                                <div class="summary-item">MEDIUM/LOW: batch branches (~5-8 commits each)</div>
+                                <div class="summary-item">Never squash topic/batch PRs (destroys per-issue history)</div>
+                              </div>
+                              <div class="summary-section">
+                                <div class="summary-heading">Merge Authority</div>
+                                <div class="summary-item">Agent never merges. Stop and ask human after checklist is green.</div>
+                                <div class="summary-item">Silence ≠ approval. Always wait for explicit human confirmation.</div>
+                              </div>
+                              <div class="raw-toggle" onclick="toggleRaw(this)">show raw ▾</div>
+                              <div class="raw-content">Quick-win: see private audit (redacted)
+
+Workflow: tdd skill per issue. Verify before starting. One issue=one commit.
+Severity: CRITICAL→HIGH→MEDIUM→LOW. Never defer criticals.
+Branches: CRITICAL=one-per-issue, HIGH=themed topics, MEDIUM/LOW=batched
+Never squash topic/batch PRs.
+Agent never merges — ask human after checklist green.
+Stop when all issues COMPLETED/NEEDS HUMAN/BLOCKED/NOT APPLICABLE.</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ~/work-system/ -->
+      <div class="tree-node">
+        <div class="dir-row" onclick="toggle(this)">
+          <span class="toggle-icon">▾</span>
+          <span class="dir-label"><span class="dir-name">work-system/</span> <span style="color:#484f58;font-size:0.68rem">⚠ work system</span></span>
+        </div>
+        <div class="dir-children">
+          <div class="tree-node">
+            <div class="tree-row">
+              <div class="file-node">
+                <div class="file-header" onclick="toggleFile(this)" data-file-path="/home/user/work-system/AGENTS.md">
+                  <span class="badge badge-agents">AGENTS.md</span>
+                  <span class="file-name fn-agents">AGENTS.md</span>
+                  <span class="scope-tag">work-system work system</span>
+                </div>
+                <div class="file-content">
+                  <div class="summary-section">
+                    <div class="summary-item">Review the <code>GEMINI.md</code> file.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script src="/app.js"></script>
+<!-- Skill editor modal -->
+<div id="skill-modal-overlay" onclick="if(event.target===this) closeSkillEditor()">
+  <div id="skill-modal">
+    <div id="skill-modal-header">
+      <span id="skill-modal-name"></span>
+      <span id="skill-modal-path"></span>
+      <button id="skill-modal-close" onclick="closeSkillEditor()">✕</button>
+    </div>
+    <textarea id="skill-modal-textarea" spellcheck="false"></textarea>
+    <div id="skill-modal-footer">
+      <span id="skill-modal-status"></span>
+      <button class="modal-btn modal-btn-cancel" onclick="closeSkillEditor()">Cancel</button>
+      <button class="modal-btn modal-btn-save" onclick="saveSkill()" disabled>Save</button>
+    </div>
+  </div>
+</div>
+</body>
 </html>
