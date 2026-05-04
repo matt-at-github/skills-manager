@@ -104,7 +104,13 @@
   .file-header.expanded { background: #161b22; border-color: #30363d; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 
   .file-name-group { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
-  .token-badge { font-size: 0.68rem; color: #484f58; white-space: nowrap; min-width: 3ch; }
+  .token-badge {
+    display: inline-flex; align-items: center;
+    padding: 1px 6px; border-radius: 4px; font-size: 0.65rem; white-space: nowrap;
+    background: #2d1a4a; color: #c084fc; border: 1px solid #7c3aed;
+    visibility: hidden;
+  }
+  .token-badge.loaded { visibility: visible; }
   .file-name { font-size: 0.82rem; font-weight: 600; }
   .file-full-path { font-size: 0.72rem; color: #484f58; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .fn-claude     { color: #58a6ff; }

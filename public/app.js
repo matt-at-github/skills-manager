@@ -223,7 +223,8 @@ function renderFileRow(file) {
       mtime = data.mtime;
       savedContent = data.content;
       textarea.value = data.content;
-      tokenBadge.textContent = '~' + calculateTokens(data.content);
+      tokenBadge.textContent = '~' + calculateTokens(data.content) + ' tokens';
+      tokenBadge.classList.add('loaded');
       setStatus('');
       setDirty(false);
       showRender(data.content);
@@ -259,7 +260,8 @@ function renderFileRow(file) {
       const data = await saveFile(file.path, content, mtime);
       mtime = data.mtime;
       savedContent = content;
-      tokenBadge.textContent = '~' + calculateTokens(content);
+      tokenBadge.textContent = '~' + calculateTokens(content) + ' tokens';
+      tokenBadge.classList.add('loaded');
       setDirty(false);
       setStatus('saved ✓', '#3fb950');
       setTimeout(() => setStatus(''), 2000);
