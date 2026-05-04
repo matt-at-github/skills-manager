@@ -192,6 +192,10 @@ function renderFileRow(file) {
     inlineEditor.classList.add('open');
     header.classList.add('expanded');
     showHeaderBtns(true);
+    const remPx = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    const dirChildren = header.closest('.tree-node')?.closest('.dir-children');
+    const anchor = dirChildren?.previousElementSibling ?? header;
+    window.scrollTo({ top: window.scrollY + anchor.getBoundingClientRect().top - remPx * 0.5, behavior: 'smooth' });
     setStatus('loading…');
     saveBtn.disabled = true;
     textarea.value = '';
