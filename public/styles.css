@@ -167,11 +167,23 @@
 
   /* Inline editor header action buttons */
   .inline-edit-mode-btn, .inline-render-mode-btn, .inline-popout-btn {
-    padding: 2px 7px; font-size: 0.7rem; flex-shrink: 0;
+    padding: 3px 9px; font-size: 0.85rem; flex-shrink: 0;
     background: #161b22; color: #8b949e; border: 1px solid #21262d;
+    opacity: 0; pointer-events: none; transition: opacity 0.1s;
+  }
+  .file-header:hover .inline-edit-mode-btn,
+  .file-header:hover .inline-render-mode-btn,
+  .file-header:hover .inline-popout-btn,
+  .file-header.expanded .inline-edit-mode-btn,
+  .file-header.expanded .inline-render-mode-btn,
+  .file-header.expanded .inline-popout-btn {
+    opacity: 1; pointer-events: auto;
   }
   .inline-edit-mode-btn:hover, .inline-render-mode-btn:hover {
     color: #c9d1d9; border-color: #484f58;
+  }
+  .inline-edit-mode-btn.mode-active, .inline-render-mode-btn.mode-active {
+    color: #c9d1d9; background: #21262d; border-color: #484f58;
   }
   .inline-popout-btn {
     color: #58a6ff; border-color: #1f6feb; background: #1a2240;
@@ -418,7 +430,10 @@
     margin-left: auto; padding: 1px 4px; font-size: 0.72rem;
     background: none; border: none; color: #6e7681; cursor: pointer;
     border-radius: 3px; flex-shrink: 0;
+    opacity: 0; pointer-events: none; transition: opacity 0.1s;
   }
+  .file-header:hover .instr-delete-btn,
+  .file-header.expanded .instr-delete-btn { opacity: 1; pointer-events: auto; }
   .instr-delete-btn:hover { color: #f85149; background: #3d1a1a; }
 
   /* ── Delete modal ── */

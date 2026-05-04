@@ -117,9 +117,6 @@ function renderFileRow(file) {
   const editModeBtn = el('button', { class: 'btn inline-edit-mode-btn', title: 'Edit inline' }, ['✎']);
   const renderModeBtn = el('button', { class: 'btn inline-render-mode-btn', title: 'Preview' }, ['👁']);
   const popoutBtn = el('button', { class: 'btn inline-popout-btn', title: 'Open in popup editor' }, ['↗']);
-  editModeBtn.style.display = 'none';
-  renderModeBtn.style.display = 'none';
-  popoutBtn.style.display = 'none';
   const rowChildren = [nameGroup, editModeBtn, renderModeBtn, popoutBtn];
 
   const isDirectInRoot = file.type === 'instructionFile' &&
@@ -169,8 +166,8 @@ function renderFileRow(file) {
     renderDiv.innerHTML = marked.parse(content ?? '');
     renderDiv.style.display = '';
     textarea.style.display = 'none';
-    editModeBtn.style.display = '';
-    renderModeBtn.style.display = 'none';
+    editModeBtn.classList.remove('mode-active');
+    renderModeBtn.classList.add('mode-active');
     saveBtn.style.display = 'none';
     inEditMode = false;
   }
@@ -178,20 +175,15 @@ function renderFileRow(file) {
   function showEdit() {
     renderDiv.style.display = 'none';
     textarea.style.display = '';
-    editModeBtn.style.display = 'none';
-    renderModeBtn.style.display = '';
+    editModeBtn.classList.add('mode-active');
+    renderModeBtn.classList.remove('mode-active');
     saveBtn.style.display = '';
     autoResize();
     textarea.focus();
     inEditMode = true;
   }
 
-  function showHeaderBtns(visible) {
-    const d = visible ? '' : 'none';
-    popoutBtn.style.display = d;
-    // mode toggle shown by showRender/showEdit when visible
-    if (!visible) { editModeBtn.style.display = 'none'; renderModeBtn.style.display = 'none'; }
-  }
+  function showHeaderBtns(_visible) { /* visibility handled by CSS hover/expanded */ }
 
   async function openInline() {
     if (!serverOnline) { alert('Start the skills-manager server first:\n\nnpm start'); return; }
