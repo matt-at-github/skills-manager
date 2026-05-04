@@ -73,6 +73,17 @@
     </div>
   </div>
 </div>
+<!-- Discard changes modal -->
+<div id="discard-modal-overlay" onclick="if(event.target===this) _resolveDiscard(false)">
+  <div id="discard-modal">
+    <div id="discard-modal-header">Unsaved changes</div>
+    <div id="discard-modal-body">Discard your changes to this file?</div>
+    <div id="discard-modal-footer">
+      <button class="modal-btn modal-btn-cancel" onclick="_resolveDiscard(false)">Keep editing</button>
+      <button class="modal-btn modal-btn-discard-confirm" onclick="_resolveDiscard(true)">Discard</button>
+    </div>
+  </div>
+</div>
 <!-- Delete modal -->
 <div id="delete-modal-overlay" onclick="if(event.target===this) closeDeleteModal()">
   <div id="delete-modal">

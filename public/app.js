@@ -174,8 +174,11 @@ function renderFileRow(file) {
     }
   }
 
-  function closeInline(force = false) {
-    if (!force && dirty && !confirm('Unsaved changes — discard?')) return false;
+  async function closeInline(force = false) {
+    if (!force && dirty) {
+      const confirmed = await confirmDiscard();
+      if (!confirmed) return false;
+    }
     inlineEditor.classList.remove('open');
     header.classList.remove('expanded');
     setDirty(false);
@@ -248,10 +251,10 @@ function renderFileRow(file) {
     closeInline(true);
   });
 
-  header.addEventListener('click', (e) => {
+  header.addEventListener('click', async (e) => {
     e.stopPropagation();
     if (inlineEditor.classList.contains('open')) {
-      closeInline();
+      await closeInline();
     } else {
       openInline();
     }
@@ -404,6 +407,22 @@ function toggle(dirRow) {
   const isCollapsed = children.classList.contains('collapsed');
   children.classList.toggle('collapsed', !isCollapsed);
   dirRow.classList.toggle('collapsed', !isCollapsed);
+}
+
+// ── Discard modal ─────────────────────────────────────────────────────
+
+let _discardResolveHandler = null;
+
+function _resolveDiscard(confirmed) {
+  document.getElementById('discard-modal-overlay').classList.remove('open');
+  if (_discardResolveHandler) { _discardResolveHandler(confirmed); _discardResolveHandler = null; }
+}
+
+function confirmDiscard() {
+  return new Promise((resolve) => {
+    _discardResolveHandler = resolve;
+    document.getElementById('discard-modal-overlay').classList.add('open');
+  });
 }
 
 // ── Server status ──────────────────────────────────────────────────────
@@ -840,6 +859,9 @@ document.addEventListener('keydown', (e) => {
   }
   if (e.key === 'Escape' && document.getElementById('delete-modal-overlay').classList.contains('open')) {
     closeDeleteModal();
+  }
+  if (e.key === 'Escape' && document.getElementById('discard-modal-overlay').classList.contains('open')) {
+    _resolveDiscard(false);
   }
 });
 
