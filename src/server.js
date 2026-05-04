@@ -7,6 +7,8 @@ import { createLogger } from "./logger.js";
 import { check as checkRequestSecurity } from "./requestSecurity.js";
 import { loadDefaultConfig } from "./config.js";
 import { scan } from "./scanner.js";
+import { createGuard } from "./pathGuard.js";
+import { read } from "./fsOps.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.resolve(__dirname, "..", "public");
@@ -67,6 +69,31 @@ function writeJson(res, status, body) {
   res.end(JSON.stringify(body));
 }
 
+async function handleRead(req, res, guard) {
+  if (!guard) {
+    writeJson(res, 503, { error: "config_unavailable" });
+    return;
+  }
+  const url = new URL(req.url, "http://x");
+  const input = url.searchParams.get("path") ?? "";
+  const allowed = await guard.check(input, "read");
+  if (!allowed.ok) {
+    writeJson(res, 403, { error: allowed.reason });
+    return;
+  }
+  try {
+    const data = await read(allowed.resolved);
+    writeJson(res, 200, data);
+  } catch (err) {
+    if (err.code === "ENOENT") {
+      writeJson(res, 404, { error: "not_found" });
+      return;
+    }
+    log.error("read failed", err);
+    writeJson(res, 500, { error: "read_failed" });
+  }
+}
+
 async function handleFiles(req, res, config) {
   if (!config) {
     writeJson(res, 503, { error: "config_unavailable" });
@@ -81,7 +108,7 @@ async function handleFiles(req, res, config) {
   }
 }
 
-export function createServer({ port = PORT, config = null } = {}) {
+export function createServer({ port = PORT, config = null, guard = null } = {}) {
   const expectedOrigin = `http://localhost:${port}`;
   return http.createServer((req, res) => {
     log.debug(req.method, req.url);
@@ -96,6 +123,10 @@ export function createServer({ port = PORT, config = null } = {}) {
       return;
     }
     const urlPath = (req.url ?? "/").split("?")[0];
+    if (req.method === "GET" && urlPath === "/read") {
+      handleRead(req, res, guard);
+      return;
+    }
     if (req.method === "GET" && urlPath === "/files") {
       handleFiles(req, res, config);
       return;
@@ -117,7 +148,8 @@ export async function start({ port = PORT } = {}) {
     log.error("failed to load config", err);
     process.exit(1);
   }
-  const server = createServer({ port, config });
+  const guard = await createGuard(config);
+  const server = createServer({ port, config, guard });
   server.on("error", (err) => {
     if (err.code === "EADDRINUSE") {
       log.error(

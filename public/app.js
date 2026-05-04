@@ -96,8 +96,9 @@ function renderTree(files) {
   markEditableFiles();
 }
 
-function selectFile(_file) {
-  // no-op — read endpoint lands in slice 5
+function selectFile(file) {
+  const name = file.relPath.split("/").pop();
+  openFileEditor(name, file.path);
 }
 
 async function loadFiles() {
@@ -187,6 +188,34 @@ function markEditableFiles() {
 
 let _currentPath = "";
 
+function showToast(message, type = "error") {
+  const toast = document.createElement("div");
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add("toast-visible"));
+  setTimeout(() => {
+    toast.classList.remove("toast-visible");
+    toast.addEventListener("transitionend", () => toast.remove(), { once: true });
+  }, 3500);
+}
+
+function set404Actions(show) {
+  document.getElementById("skill-modal-404-actions").style.display = show ? "" : "none";
+  document.querySelector(".modal-btn-save").style.display = show ? "none" : "";
+}
+
+function removeFileFromList() {
+  const header = document.querySelector(`.file-header[data-file-path="${CSS.escape(_currentPath)}"]`);
+  if (header) {
+    const treeNode = header.closest(".tree-node");
+    const group = treeNode?.parentElement?.closest(".tree-node");
+    treeNode?.remove();
+    if (group && group.querySelectorAll(".file-node").length === 0) group.remove();
+  }
+  closeSkillEditor();
+}
+
 async function openFileEditor(name, filePath) {
   if (!serverOnline) {
     alert("Start the skills-manager server first:\n\nnpm start");
@@ -195,26 +224,42 @@ async function openFileEditor(name, filePath) {
   _currentPath = filePath;
   document.getElementById("skill-modal-name").textContent = name;
   document.getElementById("skill-modal-path").textContent = filePath;
-  document.getElementById("skill-modal-status").textContent = "loading…";
+  const status = document.getElementById("skill-modal-status");
+  status.textContent = "loading…";
+  status.style.color = "";
   document.getElementById("skill-modal-textarea").value = "";
   document.getElementById("skill-modal-overlay").classList.add("open");
   document.querySelector(".modal-btn-save").disabled = true;
+  set404Actions(false);
 
   try {
     const r = await fetch(`/read?path=${encodeURIComponent(filePath)}`);
+    if (r.status === 404) {
+      status.style.color = "#f85149";
+      status.textContent = "File not found on disk.";
+      set404Actions(true);
+      return;
+    }
+    if (r.status === 403) {
+      closeSkillEditor();
+      showToast("Access denied: path not in allowlist.");
+      return;
+    }
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
     document.getElementById("skill-modal-textarea").value = data.content;
-    document.getElementById("skill-modal-status").textContent = "";
+    status.textContent = "";
     document.querySelector(".modal-btn-save").disabled = false;
     document.getElementById("skill-modal-textarea").focus();
   } catch (e) {
-    document.getElementById("skill-modal-status").textContent = `Error loading: ${e.message}`;
+    status.style.color = "#f85149";
+    status.textContent = `Error loading: ${e.message}`;
   }
 }
 
 function closeSkillEditor() {
   document.getElementById("skill-modal-overlay").classList.remove("open");
+  set404Actions(false);
   _currentPath = "";
 }
 
@@ -253,6 +298,13 @@ document.addEventListener("keydown", (e) => {
       saveSkill();
     }
     if (e.key === "Escape") closeSkillEditor();
+  }
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && _currentPath) {
+    const name = document.getElementById("skill-modal-name").textContent;
+    openFileEditor(name, _currentPath);
   }
 });
 
