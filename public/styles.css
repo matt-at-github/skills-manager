@@ -195,7 +195,7 @@
   #skill-modal-overlay.open { display: flex; }
   #skill-modal {
     background: #161b22; border: 1px solid #30363d; border-radius: 12px;
-    width: 760px; max-width: 95vw; max-height: 88vh;
+    width: 760px; max-width: 95vw; height: 80vh; max-height: 88vh;
     display: flex; flex-direction: column; overflow: hidden;
     box-shadow: 0 24px 80px rgba(0,0,0,0.6);
   }
@@ -245,7 +245,7 @@
   #skill-modal-render th, #skill-modal-render td { border: 1px solid #21262d; padding: 4px 8px; }
   #skill-modal-render th { background: #1c2128; color: #e6edf3; }
   #skill-modal-textarea {
-    flex: 1; min-height: 340px; padding: 14px 16px;
+    flex: 1; min-height: 0; padding: 14px 16px;
     background: #0d1117; color: #c9d1d9; border: none; resize: none;
     font-family: inherit; font-size: 0.75rem; line-height: 1.7; outline: none;
     tab-size: 2;
