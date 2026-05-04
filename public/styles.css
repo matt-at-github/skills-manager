@@ -103,7 +103,8 @@
   .file-header:hover { background: #161b22; border-color: #21262d; }
   .file-header.expanded { background: #161b22; border-color: #30363d; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 
-  .file-name { font-size: 0.82rem; font-weight: 600; flex: 1; }
+  .file-name-group { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+  .file-name { font-size: 0.82rem; font-weight: 600; }
   .fn-claude     { color: #58a6ff; }
   .fn-agents     { color: #e3993e; }
   .fn-symlink    { color: #c084fc; }

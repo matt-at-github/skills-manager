@@ -109,8 +109,9 @@ function renderFileRow(file) {
   // Header row
   const nameSpan = el('span', { class: 'file-name' }, [name]);
   const badgeSpan = el('span', { class: `badge ${badge.cls}` }, [badge.label]);
+  const nameGroup = el('span', { class: 'file-name-group' }, [badgeSpan, nameSpan]);
   const editBtn = el('span', { class: 'file-edit-btn', title: 'Open in popup editor' }, ['✎']);
-  const rowChildren = [nameSpan, badgeSpan, editBtn];
+  const rowChildren = [nameGroup, editBtn];
 
   const isDirectInRoot = file.type === 'instructionFile' &&
     _projectRoots.some(r => file.path === r + '/' + name);
