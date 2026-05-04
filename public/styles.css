@@ -53,6 +53,8 @@
     left: -16px; top: 0; bottom: 0; width: 1px; background: #21262d;
   }
   .tree-node:last-child::before { height: 14px; }
+  .tree-root { margin-left: 0; }
+  .tree-root::before { display: none; }
 
   .tree-row { display: flex; align-items: flex-start; gap: 8px; padding: 3px 0; position: relative; }
   .tree-row::before {
@@ -72,6 +74,14 @@
   .dir-label { color: #8b949e; font-size: 0.8rem; user-select: none; display: flex; align-items: center; gap: 6px; }
   .dir-label:hover { color: #c9d1d9; }
   .dir-name { color: #79c0ff; }
+  .project-root-name { color: #3fb950; }
+
+  .compact-expand-btn {
+    margin-left: auto; font-size: 0.65rem; color: #484f58;
+    cursor: pointer; padding: 1px 6px; border-radius: 3px;
+    user-select: none; flex-shrink: 0;
+  }
+  .compact-expand-btn:hover { color: #c9d1d9; background: #21262d; }
 
   .toggle-icon {
     display: inline-block; width: 14px; text-align: center;
