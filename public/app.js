@@ -155,6 +155,7 @@ function renderFileRow(file) {
     dirty = val;
     saveBtn.disabled = !val;
     header.classList.toggle('inline-dirty', val);
+    inlineEditor.classList.toggle('inline-dirty', val);
   }
 
   function autoResize() {
