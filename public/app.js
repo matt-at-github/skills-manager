@@ -9,6 +9,10 @@ const TYPE_BADGE = {
   other:           { cls: 'badge-global',  label: 'FILE'    },
 };
 
+const FILENAME_BADGE = {
+  'AGENTS.md': { cls: 'badge-agents', label: 'AGENTS' },
+};
+
 let isCompactMode = true;
 let _projectRoots = [];
 let _lastFiles = [];
@@ -103,8 +107,8 @@ async function saveFile(filePath, content, lastMtime) {
 // ── File row + inline editor ───────────────────────────────────────────
 
 function renderFileRow(file) {
-  const badge = TYPE_BADGE[file.type] ?? TYPE_BADGE.other;
   const name = file.relPath.split('/').pop();
+  const badge = (file.type === 'instructionFile' && FILENAME_BADGE[name]) || TYPE_BADGE[file.type] || TYPE_BADGE.other;
 
   // Header row
   const nameSpan = el('span', { class: 'file-name' }, [name]);
