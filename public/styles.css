@@ -211,7 +211,7 @@
   }
   #skill-modal-close:hover { color: #f85149; background: #3d1a1a; }
   #skill-modal-render {
-    flex: 1; overflow-y: auto; padding: 14px 16px;
+    flex: 1; min-height: 340px; overflow-y: auto; padding: 14px 16px;
     color: #c9d1d9; font-size: 0.75rem; line-height: 1.7;
   }
   #skill-modal-render h1, #skill-modal-render h2, #skill-modal-render h3,
