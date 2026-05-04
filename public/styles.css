@@ -220,5 +220,17 @@
   .modal-btn-save { background: #1a4731; color: #3fb950; border: 1px solid #238636; }
   .modal-btn-save:hover { background: #238636; color: #fff; }
   .modal-btn-save:disabled { background: #161b22; color: #484f58; border-color: #21262d; cursor: not-allowed; }
+  .modal-btn-remove { background: #3d1a1a; color: #f85149; border: 1px solid #6e1a1a; }
+  .modal-btn-remove:hover { background: #6e1a1a; color: #fff; }
+  .modal-btn-recreate { background: #161b22; color: #8b949e; border: 1px solid #30363d; }
+  .modal-btn-recreate:hover { border-color: #6e7681; color: #c9d1d9; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(16px);
+    background: #3d1a1a; color: #f85149; border: 1px solid #6e1a1a;
+    padding: 8px 20px; border-radius: 6px; font-size: 0.75rem;
+    opacity: 0; transition: opacity 0.2s, transform 0.2s; z-index: 2000; white-space: nowrap;
+  }
+  .toast-visible { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   code { background: #161b22; padding: 0 4px; border-radius: 3px; color: #d2a8ff; font-size: 0.9em; }
