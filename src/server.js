@@ -21,7 +21,11 @@ function relToHome(p) {
   if (p.startsWith(HOME + path.sep)) return "~/" + p.slice(HOME.length + 1);
   return p;
 }
-const INSTRUCTION_NAMES = new Set(["CLAUDE.md", "AGENTS.md", "GEMINI.md"]);
+const DEFAULT_INSTRUCTION_NAMES = ["CLAUDE.md", "AGENTS.md"];
+
+function getInstructionNames(config) {
+  return new Set(config?.instructionFileNames ?? DEFAULT_INSTRUCTION_NAMES);
+}
 
 async function resolveProjectRoots(projectRoots) {
   return Promise.all((projectRoots ?? []).map(async (r) => {
@@ -32,7 +36,7 @@ async function resolveProjectRoots(projectRoots) {
 
 const SKIP_DIRS = new Set([".git", "node_modules", ".next", "dist", "build", "__pycache__", ".svn", ".hg"]);
 
-async function walkInstructionFiles(dir, out = []) {
+async function walkInstructionFiles(dir, instrNames, out = []) {
   let entries;
   try {
     entries = await fs.readdir(dir, { withFileTypes: true });
@@ -42,8 +46,8 @@ async function walkInstructionFiles(dir, out = []) {
   for (const e of entries) {
     const full = path.join(dir, e.name);
     if (e.isDirectory()) {
-      if (!SKIP_DIRS.has(e.name)) await walkInstructionFiles(full, out);
-    } else if ((e.isFile() || e.isSymbolicLink()) && INSTRUCTION_NAMES.has(e.name)) {
+      if (!SKIP_DIRS.has(e.name)) await walkInstructionFiles(full, instrNames, out);
+    } else if ((e.isFile() || e.isSymbolicLink()) && instrNames.has(e.name)) {
       out.push(full);
     }
   }
@@ -183,9 +187,10 @@ async function handleFiles(req, res, config) {
   try {
     const files = await scan(config);
     const seen = new Set(files.map((f) => f.path));
+    const instrNames = getInstructionNames(config);
     const resolvedRoots = await resolveProjectRoots(config.projectRoots);
     for (const root of resolvedRoots) {
-      const instrPaths = await walkInstructionFiles(root);
+      const instrPaths = await walkInstructionFiles(root, instrNames);
       for (const targetPath of instrPaths) {
         if (seen.has(targetPath)) continue;
         try {
@@ -202,7 +207,7 @@ async function handleFiles(req, res, config) {
         }
       }
     }
-    writeJson(res, 200, { files, projectRoots: resolvedRoots });
+    writeJson(res, 200, { files, projectRoots: resolvedRoots, instructionNames: [...instrNames] });
   } catch (err) {
     log.error("scan failed", err);
     writeJson(res, 500, { error: "scan_failed" });
@@ -218,7 +223,7 @@ async function handleCreate(req, res, state) {
     return;
   }
   const { projectRoot, filename } = body;
-  if (!INSTRUCTION_NAMES.has(filename)) {
+  if (!getInstructionNames(state.config).has(filename)) {
     writeJson(res, 403, { error: "filename_not_allowed" });
     return;
   }
@@ -270,7 +275,7 @@ async function handleDelete(req, res, state) {
     return;
   }
   const basename = path.basename(typeof inputPath === "string" ? inputPath : "");
-  if (!INSTRUCTION_NAMES.has(basename)) {
+  if (!getInstructionNames(state.config).has(basename)) {
     writeJson(res, 403, { error: "filename_not_allowed" });
     return;
   }

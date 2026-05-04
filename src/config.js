@@ -54,6 +54,16 @@ export function validateConfig(obj) {
       throw new Error(`config.projectRoots[${i}] must be a non-empty string`);
     }
   }
+  if (obj.instructionFileNames !== undefined) {
+    if (!Array.isArray(obj.instructionFileNames)) {
+      throw new Error("config.instructionFileNames must be an array");
+    }
+    for (const [i, n] of obj.instructionFileNames.entries()) {
+      if (typeof n !== "string" || n.length === 0) {
+        throw new Error(`config.instructionFileNames[${i}] must be a non-empty string`);
+      }
+    }
+  }
   return obj;
 }
 

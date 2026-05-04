@@ -12,6 +12,7 @@ const TYPE_BADGE = {
 let isCompactMode = true;
 let _projectRoots = [];
 let _lastFiles = [];
+let _instructionNames = ['CLAUDE.md', 'AGENTS.md'];
 
 function makeFolder(name, fullRelPath, isProjectRoot) {
   return { name, fullRelPath, isProjectRoot, files: [], subdirs: new Map() };
@@ -274,7 +275,7 @@ function renderFolderChildren(node) {
   if (node.isProjectRoot) {
     const absPath = _projectRoots.find(p => p.replace(/^\/home\/[^/]+/, '~') === node.fullRelPath);
     if (absPath) {
-      for (const fname of ['CLAUDE.md', 'AGENTS.md', 'GEMINI.md']) {
+      for (const fname of _instructionNames) {
         if (!node.files.find(f => f.path === absPath + '/' + fname)) {
           const btn = el('button', { class: 'create-instr-btn' }, ['+ ' + fname]);
           btn.addEventListener('click', () => createInstructionFile(absPath, fname));
@@ -380,6 +381,7 @@ async function loadFiles() {
     const r = await fetch('/files');
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const body = await r.json();
+    _instructionNames = body.instructionNames ?? ['CLAUDE.md', 'AGENTS.md'];
     renderTree(body.files, body.projectRoots ?? []);
   } catch (e) {
     tree.replaceChildren(
