@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import "dotenv/config";
 import { createLogger } from "./logger.js";
 import { check as checkRequestSecurity } from "./requestSecurity.js";
-import { loadDefaultConfig } from "./config.js";
+import { loadDefaultConfig, validateConfig, getDefaultConfigPath } from "./config.js";
 import { scan } from "./scanner.js";
 import { createGuard } from "./pathGuard.js";
 import { read, write } from "./fsOps.js";
@@ -152,7 +152,43 @@ async function handleFiles(req, res, config) {
   }
 }
 
-export function createServer({ port = PORT, config = null, guard = null } = {}) {
+function handleGetConfig(req, res, config) {
+  if (!config) {
+    writeJson(res, 503, { error: "config_unavailable" });
+    return;
+  }
+  writeJson(res, 200, config);
+}
+
+async function handlePostConfig(req, res, state, configPath) {
+  let body;
+  try {
+    body = JSON.parse(await readBody(req));
+  } catch {
+    writeJson(res, 400, { error: "bad_request" });
+    return;
+  }
+  try {
+    validateConfig(body);
+  } catch (err) {
+    writeJson(res, 400, { error: err.message });
+    return;
+  }
+  const target = configPath ?? getDefaultConfigPath();
+  try {
+    await fs.writeFile(target, JSON.stringify(body, null, 2) + "\n", "utf8");
+  } catch (err) {
+    log.error("config write failed", err);
+    writeJson(res, 500, { error: "write_failed" });
+    return;
+  }
+  state.guard = await createGuard(body);
+  state.config = body;
+  writeJson(res, 200, { ok: true });
+}
+
+export function createServer({ port = PORT, config = null, guard = null, configPath = null } = {}) {
+  const state = { config, guard };
   const expectedOrigin = `http://localhost:${port}`;
   return http.createServer((req, res) => {
     log.debug(req.method, req.url);
@@ -167,16 +203,24 @@ export function createServer({ port = PORT, config = null, guard = null } = {}) 
       return;
     }
     const urlPath = (req.url ?? "/").split("?")[0];
+    if (req.method === "POST" && urlPath === "/config") {
+      handlePostConfig(req, res, state, configPath);
+      return;
+    }
+    if (req.method === "GET" && urlPath === "/config") {
+      handleGetConfig(req, res, state.config);
+      return;
+    }
     if (req.method === "POST" && urlPath === "/write") {
-      handleWrite(req, res, guard);
+      handleWrite(req, res, state.guard);
       return;
     }
     if (req.method === "GET" && urlPath === "/read") {
-      handleRead(req, res, guard);
+      handleRead(req, res, state.guard);
       return;
     }
     if (req.method === "GET" && urlPath === "/files") {
-      handleFiles(req, res, config);
+      handleFiles(req, res, state.config);
       return;
     }
     if (req.method === "GET") {
@@ -196,8 +240,9 @@ export async function start({ port = PORT } = {}) {
     log.error("failed to load config", err);
     process.exit(1);
   }
+  const configPath = getDefaultConfigPath();
   const guard = await createGuard(config);
-  const server = createServer({ port, config, guard });
+  const server = createServer({ port, config, guard, configPath });
   server.on("error", (err) => {
     if (err.code === "EADDRINUSE") {
       log.error(

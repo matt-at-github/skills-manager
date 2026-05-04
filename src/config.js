@@ -68,6 +68,10 @@ export async function loadConfig(filePath) {
   return validateConfig(parsed);
 }
 
+export function getDefaultConfigPath() {
+  return path.join(REPO_ROOT, "config.json");
+}
+
 export async function loadDefaultConfig() {
   const real = path.join(REPO_ROOT, "config.json");
   const example = path.join(REPO_ROOT, "config.example.json");
