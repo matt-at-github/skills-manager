@@ -401,3 +401,47 @@
   .delete-btn-confirm:disabled { background: #161b22; color: #484f58; border-color: #21262d; cursor: not-allowed; }
 
   code { background: #161b22; padding: 0 4px; border-radius: 3px; color: #d2a8ff; font-size: 0.9em; }
+
+  /* ── Inline editor ── */
+  .inline-editor {
+    display: none; margin: 2px 0 4px 0;
+    border: 1px solid #21262d; border-radius: 0 0 6px 6px;
+    background: #0d1117; overflow: hidden;
+  }
+  .inline-editor.open { display: block; }
+
+  .file-header.expanded {
+    border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+    border-color: #21262d; background: #161b22;
+  }
+  .file-header.inline-dirty::after {
+    content: '●'; color: #e3993e; font-size: 0.55rem;
+    position: absolute; top: 4px; right: 4px;
+  }
+
+  .inline-textarea {
+    width: 100%; min-height: 80px; max-height: 500px;
+    padding: 12px 14px; background: #0d1117; color: #c9d1d9;
+    border: none; resize: none; outline: none; overflow-y: auto;
+    font-family: inherit; font-size: 0.75rem; line-height: 1.7;
+    tab-size: 2; display: block;
+  }
+
+  .inline-footer {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px; border-top: 1px solid #21262d;
+    background: #0d1117;
+  }
+  .inline-status { flex: 1; font-size: 0.68rem; color: #6e7681; }
+  .inline-popout-btn {
+    font-size: 0.7rem; color: #484f58; cursor: pointer;
+    padding: 2px 6px; border-radius: 4px; user-select: none;
+    border: 1px solid #21262d; background: #161b22;
+  }
+  .inline-popout-btn:hover { color: #58a6ff; border-color: #1f6feb; background: #1a2240; }
+  .inline-save-btn {
+    padding: 3px 12px; font-size: 0.7rem;
+    background: #1a4731; color: #3fb950; border: 1px solid #238636;
+  }
+  .inline-save-btn:hover:not(:disabled) { background: #238636; color: #fff; }
+  .inline-save-btn:disabled { background: #161b22; color: #484f58; border-color: #21262d; cursor: not-allowed; }

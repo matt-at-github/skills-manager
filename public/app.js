@@ -70,13 +70,45 @@ function el(tag, props = {}, children = []) {
   return node;
 }
 
+// ── Shared file I/O ────────────────────────────────────────────────────
+
+async function loadFile(filePath) {
+  const r = await fetch(`/read?path=${encodeURIComponent(filePath)}`);
+  if (!r.ok) {
+    const err = new Error(`HTTP ${r.status}`);
+    err.status = r.status;
+    throw err;
+  }
+  return r.json();
+}
+
+async function saveFile(filePath, content, lastMtime) {
+  const r = await fetch('/write', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: filePath, content, lastMtime }),
+  });
+  if (r.status === 409) {
+    const data = await r.json();
+    const err = new Error('conflict');
+    err.status = 409;
+    err.data = data;
+    throw err;
+  }
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+// ── File row + inline editor ───────────────────────────────────────────
+
 function renderFileRow(file) {
   const badge = TYPE_BADGE[file.type] ?? TYPE_BADGE.other;
   const name = file.relPath.split('/').pop();
+
+  // Header row
   const nameSpan = el('span', { class: 'file-name' }, [name]);
   const badgeSpan = el('span', { class: `badge ${badge.cls}` }, [badge.label]);
-  const editBtn = el('span', { class: 'file-edit-btn', title: 'Edit ' + name }, ['✎']);
-  editBtn.addEventListener('click', (e) => { e.stopPropagation(); openFileEditor(name, file.path); });
+  const editBtn = el('span', { class: 'file-edit-btn', title: 'Open in popup editor' }, ['✎']);
   const rowChildren = [nameSpan, badgeSpan, editBtn];
 
   const isDirectInRoot = file.type === 'instructionFile' &&
@@ -90,11 +122,144 @@ function renderFileRow(file) {
   const header = el('div', {
     class: 'file-header',
     dataset: { filePath: file.path, fileType: file.type },
-    onclick: (e) => { e.stopPropagation(); selectFile(file); },
   }, rowChildren);
+
+  // Inline editor
+  const textarea = el('textarea', { class: 'inline-textarea', spellcheck: 'false' });
+  const statusSpan = el('span', { class: 'inline-status' });
+  const popoutBtn = el('span', { class: 'inline-popout-btn', title: 'Open in popup editor' }, ['✎']);
+  const saveBtn = el('button', { class: 'btn inline-save-btn' }, ['Save']);
+  saveBtn.disabled = true;
+  const footer = el('div', { class: 'inline-footer' }, [statusSpan, popoutBtn, saveBtn]);
+  const inlineEditor = el('div', { class: 'inline-editor' }, [textarea, footer]);
+
+  // Per-instance state
+  let mtime = 0;
+  let dirty = false;
+
+  function setStatus(text, color = '') {
+    statusSpan.textContent = text;
+    statusSpan.style.color = color;
+  }
+
+  function setDirty(val) {
+    dirty = val;
+    saveBtn.disabled = !val;
+    header.classList.toggle('inline-dirty', val);
+  }
+
+  function autoResize() {
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 500) + 'px';
+  }
+
+  async function openInline() {
+    if (!serverOnline) { alert('Start the skills-manager server first:\n\nnpm start'); return; }
+    inlineEditor.classList.add('open');
+    header.classList.add('expanded');
+    setStatus('loading…');
+    saveBtn.disabled = true;
+    textarea.value = '';
+    try {
+      const data = await loadFile(file.path);
+      mtime = data.mtime;
+      textarea.value = data.content;
+      setStatus('');
+      setDirty(false);
+      autoResize();
+    } catch (e) {
+      if (e.status === 404) { setStatus('File not found on disk.', '#f85149'); return; }
+      if (e.status === 403) { setStatus('Access denied.', '#f85149'); return; }
+      setStatus(`Error: ${e.message}`, '#f85149');
+    }
+  }
+
+  function closeInline(force = false) {
+    if (!force && dirty && !confirm('Unsaved changes — discard?')) return false;
+    inlineEditor.classList.remove('open');
+    header.classList.remove('expanded');
+    setDirty(false);
+    textarea.value = '';
+    setStatus('');
+    return true;
+  }
+
+  async function doSave() {
+    if (!dirty) return;
+    const content = textarea.value;
+    setStatus('saving…');
+    saveBtn.disabled = true;
+    try {
+      const data = await saveFile(file.path, content, mtime);
+      mtime = data.mtime;
+      setDirty(false);
+      setStatus('saved ✓', '#3fb950');
+      setTimeout(() => setStatus(''), 2000);
+    } catch (e) {
+      if (e.status === 409) {
+        saveBtn.disabled = false;
+        openConflictModal(
+          content,
+          e.data.currentContent,
+          e.data.currentMtime,
+          async (resolvedContent) => {
+            try {
+              const d = await saveFile(file.path, resolvedContent, e.data.currentMtime);
+              mtime = d.mtime;
+              textarea.value = resolvedContent;
+              setDirty(false);
+              setStatus('saved ✓', '#3fb950');
+              setTimeout(() => setStatus(''), 2000);
+            } catch (err) {
+              setStatus(`Error: ${err.message}`, '#f85149');
+              saveBtn.disabled = false;
+            }
+          },
+          (theirContent) => {
+            mtime = e.data.currentMtime;
+            textarea.value = theirContent;
+            setDirty(false);
+            setStatus('');
+            autoResize();
+          },
+        );
+        return;
+      }
+      setStatus(`Error: ${e.message}`, '#f85149');
+      saveBtn.disabled = false;
+    }
+  }
+
+  // Wire up events
+  textarea.addEventListener('input', () => { setDirty(true); autoResize(); });
+  textarea.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); doSave(); }
+  });
+  saveBtn.addEventListener('click', doSave);
+
+  editBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openFileEditor(name, file.path);
+  });
+
+  popoutBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openFileEditor(name, file.path, textarea.value, mtime);
+    closeInline(true);
+  });
+
+  header.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (inlineEditor.classList.contains('open')) {
+      closeInline();
+    } else {
+      openInline();
+    }
+  });
 
   return el('div', { class: 'tree-node' }, [
     el('div', { class: 'tree-row' }, [el('div', { class: 'file-node' }, [header])]),
+    inlineEditor,
   ]);
 }
 
@@ -163,7 +328,6 @@ function renderCompactChain(startNode) {
 
   expandBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    // Build full nested DOM for chain, reusing leafChildren
     let inner = leafChildren;
     for (let i = chainNodes.length - 1; i >= 0; i--) {
       const n = chainNodes[i];
@@ -206,11 +370,6 @@ function toggleCompactMode() {
   renderTree(_lastFiles, _projectRoots);
 }
 
-function selectFile(file) {
-  const name = file.relPath.split('/').pop();
-  openFileEditor(name, file.path);
-}
-
 async function loadFiles() {
   const tree = document.getElementById('tree');
   tree.replaceChildren(el('div', { class: 'tree-loading' }, ['loading…']));
@@ -231,15 +390,11 @@ async function loadFiles() {
 function expandAll() {
   document.querySelectorAll('.dir-children').forEach((c) => c.classList.remove('collapsed'));
   document.querySelectorAll('.dir-row').forEach((r) => r.classList.remove('collapsed'));
-  document.querySelectorAll('.file-content').forEach((c) => c.classList.add('open'));
-  document.querySelectorAll('.file-header').forEach((h) => h.classList.add('expanded'));
 }
 
 function collapseAll() {
   document.querySelectorAll('.dir-children').forEach((c) => c.classList.add('collapsed'));
   document.querySelectorAll('.dir-row').forEach((r) => r.classList.add('collapsed'));
-  document.querySelectorAll('.file-content').forEach((c) => c.classList.remove('open'));
-  document.querySelectorAll('.file-header').forEach((h) => h.classList.remove('expanded'));
 }
 
 function toggle(dirRow) {
@@ -251,15 +406,7 @@ function toggle(dirRow) {
   dirRow.classList.toggle('collapsed', !isCollapsed);
 }
 
-function toggleFile(header) {
-  const content = header.nextElementSibling;
-  if (!content) return;
-  const isOpen = content.classList.contains('open');
-  content.classList.toggle('open', !isOpen);
-  header.classList.toggle('expanded', !isOpen);
-}
-
-// ── File editor (server up indicator + modal stub) ─────────────────────
+// ── Server status ──────────────────────────────────────────────────────
 
 let serverOnline = false;
 
@@ -279,12 +426,10 @@ async function checkServer() {
 }
 
 function markEditableFiles() {
-  // no-op: edit buttons are rendered inline in renderFileRow
+  // no-op: buttons rendered inline in renderFileRow
 }
 
-let _currentPath = '';
-let _lastMtime = 0;
-let _conflictServerMtime = 0;
+// ── Toast ──────────────────────────────────────────────────────────────
 
 function showToast(message, type = 'error') {
   const toast = document.createElement('div');
@@ -298,6 +443,11 @@ function showToast(message, type = 'error') {
   }, 3500);
 }
 
+// ── Popup editor ───────────────────────────────────────────────────────
+
+let _currentPath = '';
+let _lastMtime = 0;
+
 function set404Actions(show) {
   document.getElementById('skill-modal-404-actions').style.display = show ? '' : 'none';
   document.querySelector('.modal-btn-save').style.display = show ? 'none' : '';
@@ -308,7 +458,7 @@ function removeFileFromList() {
   loadFiles();
 }
 
-async function openFileEditor(name, filePath) {
+async function openFileEditor(name, filePath, prefillContent = null, prefillMtime = null) {
   if (!serverOnline) {
     alert('Start the skills-manager server first:\n\nnpm start');
     return;
@@ -317,34 +467,41 @@ async function openFileEditor(name, filePath) {
   document.getElementById('skill-modal-name').textContent = name;
   document.getElementById('skill-modal-path').textContent = filePath;
   const status = document.getElementById('skill-modal-status');
-  status.textContent = 'loading…';
+  status.textContent = '';
   status.style.color = '';
   document.getElementById('skill-modal-textarea').value = '';
   document.getElementById('skill-modal-overlay').classList.add('open');
   document.querySelector('.modal-btn-save').disabled = true;
   set404Actions(false);
 
+  if (prefillContent !== null) {
+    _lastMtime = prefillMtime ?? 0;
+    document.getElementById('skill-modal-textarea').value = prefillContent;
+    document.querySelector('.modal-btn-save').disabled = false;
+    document.getElementById('skill-modal-textarea').focus();
+    return;
+  }
+
+  status.textContent = 'loading…';
   try {
-    const r = await fetch(`/read?path=${encodeURIComponent(filePath)}`);
-    if (r.status === 404) {
-      status.style.color = '#f85149';
-      status.textContent = 'File not found on disk.';
-      set404Actions(true);
-      return;
-    }
-    if (r.status === 403) {
-      closeSkillEditor();
-      showToast('Access denied: path not in allowlist.');
-      return;
-    }
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const data = await r.json();
+    const data = await loadFile(filePath);
     _lastMtime = data.mtime;
     document.getElementById('skill-modal-textarea').value = data.content;
     status.textContent = '';
     document.querySelector('.modal-btn-save').disabled = false;
     document.getElementById('skill-modal-textarea').focus();
   } catch (e) {
+    if (e.status === 404) {
+      status.style.color = '#f85149';
+      status.textContent = 'File not found on disk.';
+      set404Actions(true);
+      return;
+    }
+    if (e.status === 403) {
+      closeSkillEditor();
+      showToast('Access denied: path not in allowlist.');
+      return;
+    }
     status.style.color = '#f85149';
     status.textContent = `Error loading: ${e.message}`;
   }
@@ -357,10 +514,71 @@ function closeSkillEditor() {
   _lastMtime = 0;
 }
 
+async function saveSkill() {
+  if (!_currentPath) return;
+  const content = document.getElementById('skill-modal-textarea').value;
+  const status = document.getElementById('skill-modal-status');
+  const saveBtn = document.querySelector('.modal-btn-save');
+  status.textContent = 'saving…';
+  status.style.color = '';
+  saveBtn.disabled = true;
+  try {
+    const data = await saveFile(_currentPath, content, _lastMtime);
+    _lastMtime = data.mtime;
+    status.style.color = '#3fb950';
+    status.textContent = 'saved ✓';
+    setTimeout(() => { status.textContent = ''; status.style.color = ''; }, 2000);
+  } catch (e) {
+    if (e.status === 409) {
+      saveBtn.disabled = false;
+      openConflictModal(
+        content,
+        e.data.currentContent,
+        e.data.currentMtime,
+        async (resolvedContent) => {
+          status.textContent = 'saving…';
+          status.style.color = '';
+          saveBtn.disabled = true;
+          try {
+            const d = await saveFile(_currentPath, resolvedContent, e.data.currentMtime);
+            _lastMtime = d.mtime;
+            document.getElementById('skill-modal-textarea').value = resolvedContent;
+            status.style.color = '#3fb950';
+            status.textContent = 'saved ✓';
+            saveBtn.disabled = false;
+            setTimeout(() => { status.textContent = ''; status.style.color = ''; }, 2000);
+          } catch (err) {
+            status.style.color = '#f85149';
+            status.textContent = `Error: ${err.message}`;
+            saveBtn.disabled = false;
+          }
+        },
+        (theirContent) => {
+          _lastMtime = e.data.currentMtime;
+          document.getElementById('skill-modal-textarea').value = theirContent;
+          status.style.color = '';
+          status.textContent = '';
+          saveBtn.disabled = false;
+        },
+      );
+      return;
+    }
+    status.style.color = '#f85149';
+    status.textContent = `Error: ${e.message}`;
+    saveBtn.disabled = false;
+  }
+}
+
 // ── Conflict modal ─────────────────────────────────────────────────────
 
-function openConflictModal(myContent, theirContent, serverMtime) {
+let _conflictServerMtime = 0;
+let _onConflictKeep = null;
+let _onConflictDiscard = null;
+
+function openConflictModal(myContent, theirContent, serverMtime, onKeep, onDiscard) {
   _conflictServerMtime = serverMtime;
+  _onConflictKeep = onKeep;
+  _onConflictDiscard = onDiscard;
   document.getElementById('conflict-mine').value = myContent;
   document.getElementById('conflict-mine').readOnly = true;
   document.getElementById('conflict-theirs').value = theirContent;
@@ -376,18 +594,13 @@ function closeConflictModal() {
 async function keepMine() {
   const content = document.getElementById('conflict-mine').value;
   closeConflictModal();
-  await forceSave(_currentPath, content, _conflictServerMtime);
+  if (_onConflictKeep) await _onConflictKeep(content);
 }
 
 function discardMine() {
   const theirContent = document.getElementById('conflict-theirs').value;
-  _lastMtime = _conflictServerMtime;
-  document.getElementById('skill-modal-textarea').value = theirContent;
-  const status = document.getElementById('skill-modal-status');
-  status.style.color = '';
-  status.textContent = '';
-  document.querySelector('.modal-btn-save').disabled = false;
   closeConflictModal();
+  if (_onConflictDiscard) _onConflictDiscard(theirContent);
 }
 
 function openBoth() {
@@ -400,68 +613,7 @@ function openBoth() {
 async function saveMerged() {
   const content = document.getElementById('conflict-mine').value;
   closeConflictModal();
-  await forceSave(_currentPath, content, _conflictServerMtime);
-}
-
-async function forceSave(filePath, content, knownMtime) {
-  const status = document.getElementById('skill-modal-status');
-  const saveBtn = document.querySelector('.modal-btn-save');
-  status.textContent = 'saving…';
-  status.style.color = '';
-  saveBtn.disabled = true;
-  try {
-    const r = await fetch('/write', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: filePath, content, lastMtime: knownMtime }),
-    });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const data = await r.json();
-    _lastMtime = data.mtime;
-    document.getElementById('skill-modal-textarea').value = content;
-    status.style.color = '#3fb950';
-    status.textContent = 'saved ✓';
-    document.querySelector('.modal-btn-save').disabled = false;
-    setTimeout(() => { status.textContent = ''; status.style.color = ''; }, 2000);
-  } catch (e) {
-    status.style.color = '#f85149';
-    status.textContent = `Error: ${e.message}`;
-    saveBtn.disabled = false;
-  }
-}
-
-async function saveSkill() {
-  if (!_currentPath) return;
-  const content = document.getElementById('skill-modal-textarea').value;
-  const status = document.getElementById('skill-modal-status');
-  const saveBtn = document.querySelector('.modal-btn-save');
-  status.textContent = 'saving…';
-  status.style.color = '';
-  saveBtn.disabled = true;
-  try {
-    const r = await fetch('/write', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: _currentPath, content, lastMtime: _lastMtime }),
-    });
-    if (r.status === 409) {
-      const data = await r.json();
-      saveBtn.disabled = false;
-      openConflictModal(content, data.currentContent, data.currentMtime);
-      return;
-    }
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const data = await r.json();
-    _lastMtime = data.mtime;
-    status.style.color = '#3fb950';
-    status.textContent = 'saved ✓';
-    setTimeout(() => { status.textContent = ''; status.style.color = ''; }, 2000);
-  } catch (e) {
-    status.style.color = '#f85149';
-    status.textContent = `Error: ${e.message}`;
-  } finally {
-    saveBtn.disabled = false;
-  }
+  if (_onConflictKeep) await _onConflictKeep(content);
 }
 
 // ── Delete modal ────────────────────────────────────────────────────────
