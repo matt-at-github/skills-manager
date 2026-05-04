@@ -145,6 +145,7 @@ function renderFileRow(file) {
   let mtime = 0;
   let dirty = false;
   let inEditMode = false;
+  let savedContent = '';
 
   function setStatus(text, color = '') {
     statusSpan.textContent = text;
@@ -198,6 +199,7 @@ function renderFileRow(file) {
     try {
       const data = await loadFile(file.path);
       mtime = data.mtime;
+      savedContent = data.content;
       textarea.value = data.content;
       setStatus('');
       setDirty(false);
@@ -233,6 +235,7 @@ function renderFileRow(file) {
     try {
       const data = await saveFile(file.path, content, mtime);
       mtime = data.mtime;
+      savedContent = content;
       setDirty(false);
       setStatus('saved ✓', '#3fb950');
       setTimeout(() => setStatus(''), 2000);
@@ -277,7 +280,15 @@ function renderFileRow(file) {
   textarea.addEventListener('input', () => { setDirty(true); autoResize(); });
   textarea.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); doSave(); }
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      if (!dirty) { showRender(textarea.value); return; }
+      confirmDiscard().then(confirmed => {
+        if (confirmed) { textarea.value = savedContent; setDirty(false); showRender(savedContent); }
+      });
+    }
   });
+  renderDiv.addEventListener('dblclick', (e) => { e.stopPropagation(); showEdit(); });
   saveBtn.addEventListener('click', doSave);
   editModeBtn.addEventListener('click', (e) => { e.stopPropagation(); showEdit(); });
   renderModeBtn.addEventListener('click', (e) => { e.stopPropagation(); showRender(textarea.value); });
