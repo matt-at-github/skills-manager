@@ -113,7 +113,9 @@ function renderFileRow(file) {
   // Header row
   const nameSpan = el('span', { class: 'file-name' }, [name]);
   const badgeSpan = el('span', { class: `badge ${badge.cls}` }, [badge.label]);
-  const nameGroup = el('span', { class: 'file-name-group' }, [badgeSpan, nameSpan]);
+  const dirPath = file.relPath.slice(0, file.relPath.lastIndexOf('/') + 1);
+  const pathSpan = el('span', { class: 'file-full-path' }, [dirPath]);
+  const nameGroup = el('span', { class: 'file-name-group' }, [badgeSpan, nameSpan, pathSpan]);
   const editModeBtn = el('button', { class: 'btn inline-edit-mode-btn', title: 'Edit inline' }, ['✎']);
   const renderModeBtn = el('button', { class: 'btn inline-render-mode-btn', title: 'Preview' }, ['👁']);
   const popoutBtn = el('button', { class: 'btn inline-popout-btn', title: 'Open in popup editor' }, ['↗']);

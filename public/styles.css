@@ -105,6 +105,7 @@
 
   .file-name-group { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
   .file-name { font-size: 0.82rem; font-weight: 600; }
+  .file-full-path { font-size: 0.72rem; color: #484f58; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .fn-claude     { color: #58a6ff; }
   .fn-agents     { color: #e3993e; }
   .fn-symlink    { color: #c084fc; }
