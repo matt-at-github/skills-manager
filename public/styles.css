@@ -167,25 +167,27 @@
   .fn-skill.plugin-skill  { color: #e3993e; }
 
   /* Inline editor header action buttons */
-  .inline-edit-mode-btn, .inline-render-mode-btn, .inline-popout-btn {
-    padding: 3px 9px; font-size: 0.85rem; flex-shrink: 0;
-    background: #161b22; color: #8b949e; border: 1px solid #21262d;
-    opacity: 0; pointer-events: none; transition: opacity 0.1s;
+  .inline-edit-mode-btn, .inline-render-mode-btn, .inline-popout-btn, .instr-delete-btn {
+    flex-shrink: 0; opacity: 0; pointer-events: none; font-variant-emoji: text;
+    transition: color 0.1s, border-color 0.1s, background 0.1s, opacity 0.1s;
   }
   .file-header:hover .inline-edit-mode-btn,
   .file-header:hover .inline-render-mode-btn,
   .file-header:hover .inline-popout-btn,
+  .file-header:hover .instr-delete-btn,
   .file-header.expanded .inline-edit-mode-btn,
   .file-header.expanded .inline-render-mode-btn,
-  .file-header.expanded .inline-popout-btn {
+  .file-header.expanded .inline-popout-btn,
+  .file-header.expanded .instr-delete-btn {
     opacity: 1; pointer-events: auto;
   }
   .inline-edit-mode-btn:hover, .inline-render-mode-btn:hover {
-    color: #c9d1d9; border-color: #484f58;
+    color: #58a6ff; border-color: #1f6feb; background: #1a2240;
   }
   .inline-edit-mode-btn.mode-active, .inline-render-mode-btn.mode-active {
     color: #c9d1d9; background: #21262d; border-color: #484f58;
   }
+  .inline-edit-mode-btn, .inline-popout-btn { font-size: 1rem; }
   .inline-popout-btn {
     color: #58a6ff; border-color: #1f6feb; background: #1a2240;
   }
@@ -427,15 +429,8 @@
   }
   .create-instr-btn:hover { color: #3fb950; border-color: #238636; }
 
-  .instr-delete-btn {
-    margin-left: auto; padding: 1px 4px; font-size: 0.72rem;
-    background: none; border: none; color: #6e7681; cursor: pointer;
-    border-radius: 3px; flex-shrink: 0;
-    opacity: 0; pointer-events: none; transition: opacity 0.1s;
-  }
-  .file-header:hover .instr-delete-btn,
-  .file-header.expanded .instr-delete-btn { opacity: 1; pointer-events: auto; }
-  .instr-delete-btn:hover { color: #f85149; background: #3d1a1a; }
+  .instr-delete-btn { margin-left: auto; }
+  .instr-delete-btn:hover { color: #f85149; border-color: #6e1a1a; background: #3d1a1a; }
 
   /* ── Delete modal ── */
   #delete-modal-overlay {
