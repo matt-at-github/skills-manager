@@ -114,8 +114,13 @@ function renderFileRow(file) {
   const nameSpan = el('span', { class: 'file-name' }, [name]);
   const badgeSpan = el('span', { class: `badge ${badge.cls}` }, [badge.label]);
   const nameGroup = el('span', { class: 'file-name-group' }, [badgeSpan, nameSpan]);
-  const editBtn = el('span', { class: 'file-edit-btn', title: 'Open in popup editor' }, ['✎']);
-  const rowChildren = [nameGroup, editBtn];
+  const editModeBtn = el('button', { class: 'btn inline-edit-mode-btn', title: 'Edit inline' }, ['✎']);
+  const renderModeBtn = el('button', { class: 'btn inline-render-mode-btn', title: 'Preview' }, ['👁']);
+  const popoutBtn = el('button', { class: 'btn inline-popout-btn', title: 'Open in popup editor' }, ['↗']);
+  editModeBtn.style.display = 'none';
+  renderModeBtn.style.display = 'none';
+  popoutBtn.style.display = 'none';
+  const rowChildren = [nameGroup, editModeBtn, renderModeBtn, popoutBtn];
 
   const isDirectInRoot = file.type === 'instructionFile' &&
     _projectRoots.some(r => file.path === r + '/' + name);
@@ -134,12 +139,9 @@ function renderFileRow(file) {
   const textarea = el('textarea', { class: 'inline-textarea', spellcheck: 'false' });
   const renderDiv = el('div', { class: 'inline-render' });
   const statusSpan = el('span', { class: 'inline-status' });
-  const editModeBtn = el('button', { class: 'btn inline-edit-mode-btn', title: 'Edit' }, ['✎']);
-  const renderModeBtn = el('button', { class: 'btn inline-render-mode-btn', title: 'Preview' }, ['👁']);
-  const popoutBtn = el('span', { class: 'inline-popout-btn', title: 'Open in popup editor' }, ['✎']);
   const saveBtn = el('button', { class: 'btn inline-save-btn' }, ['Save']);
   saveBtn.disabled = true;
-  const footer = el('div', { class: 'inline-footer' }, [statusSpan, editModeBtn, renderModeBtn, popoutBtn, saveBtn]);
+  const footer = el('div', { class: 'inline-footer' }, [statusSpan, saveBtn]);
   const inlineEditor = el('div', { class: 'inline-editor' }, [renderDiv, textarea, footer]);
 
   // Per-instance state
@@ -184,10 +186,18 @@ function renderFileRow(file) {
     inEditMode = true;
   }
 
+  function showHeaderBtns(visible) {
+    const d = visible ? '' : 'none';
+    popoutBtn.style.display = d;
+    // mode toggle shown by showRender/showEdit when visible
+    if (!visible) { editModeBtn.style.display = 'none'; renderModeBtn.style.display = 'none'; }
+  }
+
   async function openInline() {
     if (!serverOnline) { alert('Start the skills-manager server first:\n\nnpm start'); return; }
     inlineEditor.classList.add('open');
     header.classList.add('expanded');
+    showHeaderBtns(true);
     setStatus('loading…');
     saveBtn.disabled = true;
     textarea.value = '';
@@ -213,6 +223,7 @@ function renderFileRow(file) {
     }
     inlineEditor.classList.remove('open');
     header.classList.remove('expanded');
+    showHeaderBtns(false);
     setDirty(false);
     textarea.value = '';
     renderDiv.innerHTML = '';
@@ -277,15 +288,9 @@ function renderFileRow(file) {
   saveBtn.addEventListener('click', doSave);
   editModeBtn.addEventListener('click', (e) => { e.stopPropagation(); showEdit(); });
   renderModeBtn.addEventListener('click', (e) => { e.stopPropagation(); showRender(textarea.value); });
-
-  editBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    openFileEditor(name, file.path);
-  });
-
   popoutBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    openFileEditor(name, file.path, textarea.value, mtime);
+    openFileEditor(name, file.path, inEditMode ? textarea.value : null, inEditMode ? mtime : null);
     closeInline(true);
   });
 

@@ -165,16 +165,18 @@
   .fn-skill.project-skill { color: #56d364; }
   .fn-skill.plugin-skill  { color: #e3993e; }
 
-  /* File-header edit button */
-  .file-header { position: relative; }
-  .file-edit-btn {
-    display: none; position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-    font-size: 0.7rem; color: #58a6ff; cursor: pointer; padding: 2px 5px;
-    background: #1a2240; border: 1px solid #1f6feb; border-radius: 4px;
-    line-height: 1; user-select: none; z-index: 10;
+  /* Inline editor header action buttons */
+  .inline-edit-mode-btn, .inline-render-mode-btn, .inline-popout-btn {
+    padding: 2px 7px; font-size: 0.7rem; flex-shrink: 0;
+    background: #161b22; color: #8b949e; border: 1px solid #21262d;
   }
-  .file-header:hover .file-edit-btn { display: inline-block; }
-  .file-edit-btn:hover { background: #253a6e; }
+  .inline-edit-mode-btn:hover, .inline-render-mode-btn:hover {
+    color: #c9d1d9; border-color: #484f58;
+  }
+  .inline-popout-btn {
+    color: #58a6ff; border-color: #1f6feb; background: #1a2240;
+  }
+  .inline-popout-btn:hover { background: #253a6e; }
 
   /* Server status badge */
   .server-status {
@@ -499,26 +501,12 @@
     background: #0d1117;
   }
   .inline-status { flex: 1; font-size: 0.68rem; color: #6e7681; }
-  .inline-popout-btn {
-    font-size: 0.7rem; color: #484f58; cursor: pointer;
-    padding: 2px 6px; border-radius: 4px; user-select: none;
-    border: 1px solid #21262d; background: #161b22;
-  }
-  .inline-popout-btn:hover { color: #58a6ff; border-color: #1f6feb; background: #1a2240; }
   .inline-save-btn {
     padding: 3px 12px; font-size: 0.7rem;
     background: #1a4731; color: #3fb950; border: 1px solid #238636;
   }
   .inline-save-btn:hover:not(:disabled) { background: #238636; color: #fff; }
   .inline-save-btn:disabled { background: #161b22; color: #484f58; border-color: #21262d; cursor: not-allowed; }
-
-  .inline-edit-mode-btn, .inline-render-mode-btn {
-    padding: 2px 8px; font-size: 0.7rem;
-    background: #161b22; color: #8b949e; border: 1px solid #21262d;
-  }
-  .inline-edit-mode-btn:hover, .inline-render-mode-btn:hover {
-    color: #58a6ff; border-color: #1f6feb; background: #1a2240;
-  }
 
   .inline-render {
     width: 100%; max-height: 500px; overflow-y: auto;
