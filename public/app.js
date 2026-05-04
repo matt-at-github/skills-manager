@@ -80,10 +80,147 @@ function renderGroup(group, files) {
   return el("div", { class: "tree-node" }, [header, children]);
 }
 
-function renderTree(files) {
+function renderProjectRoot(root, files) {
+  const label = root.replace(/^\/home\/[^/]+/, "~") || root;
+  const rows = [];
+  for (const name of ["CLAUDE.md", "AGENTS.md", "GEMINI.md"]) {
+    const filePath = root + "/" + name;
+    const existing = files.find((f) => f.path === filePath);
+    if (existing) {
+      const nameSpan = el("span", { class: "file-name" }, [name]);
+      const pathSpan = el("span", { class: "scope-tag" }, [existing.relPath]);
+      const editBtn = el("span", { class: "file-edit-btn", title: "Edit " + name }, ["✎"]);
+      editBtn.addEventListener("click", (e) => { e.stopPropagation(); openFileEditor(name, filePath); });
+      const delBtn = el("span", { class: "instr-delete-btn", title: "Delete " + name }, ["🗑"]);
+      delBtn.addEventListener("click", (e) => { e.stopPropagation(); openDeleteModal(filePath); });
+      const header = el("div", { class: "file-header", dataset: { filePath, fileType: "instructionFile" } }, [nameSpan, pathSpan, editBtn, delBtn]);
+      rows.push(el("div", { class: "tree-node" }, [el("div", { class: "tree-row" }, [el("div", { class: "file-node" }, [header])])]));
+    } else {
+      const btn = el("button", { class: "create-instr-btn" }, ["+ " + name]);
+      btn.addEventListener("click", () => createInstructionFile(root, name));
+      rows.push(el("div", { class: "tree-node" }, [el("div", { class: "tree-row" }, [btn])]));
+    }
+  }
+  const header = el("div", { class: "dir-row", onclick: (e) => toggle(e.currentTarget) }, [
+    el("span", { class: "toggle-icon" }, ["▾"]),
+    el("span", { class: "dir-label" }, [
+      el("span", { class: "badge badge-global" }, ["PROJECT ROOT"]),
+      el("span", { class: "scope-tag" }, [label]),
+    ]),
+  ]);
+  const children = el("div", { class: "dir-children" }, rows);
+  return el("div", { class: "tree-node" }, [header, children]);
+}
+
+function renderProjectRootsSection(files, projectRoots) {
+  if (!projectRoots || projectRoots.length === 0) return null;
+  const container = document.createDocumentFragment();
+  for (const root of projectRoots) {
+    container.appendChild(renderProjectRoot(root, files));
+  }
+  const wrapper = document.createElement("div");
+  wrapper.appendChild(container);
+  return wrapper;
+}
+
+async function createInstructionFile(projectRoot, filename) {
+  try {
+    const r = await fetch("/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectRoot, filename }),
+    });
+    if (!r.ok) {
+      const data = await r.json().catch(() => ({}));
+      showToast(`Create failed: ${data.error ?? r.status}`);
+      return;
+    }
+    await loadFiles();
+  } catch (e) {
+    showToast(`Create failed: ${e.message}`);
+  }
+}
+
+// ── Delete modal ────────────────────────────────────────────────────────
+
+let _deleteFilePath = "";
+let _deleteMode = "trash";
+
+function openDeleteModal(filePath) {
+  _deleteFilePath = filePath;
+  _deleteMode = "trash";
+  const nameEl = document.getElementById("delete-confirm-name");
+  if (nameEl) nameEl.textContent = filePath.split("/").pop();
+  document.getElementById("delete-modal-path").textContent = filePath;
+  const confirmInput = document.getElementById("delete-confirm-input");
+  if (confirmInput) confirmInput.value = "";
+  const radios = document.querySelectorAll("input[name='delete-mode']");
+  radios.forEach((r) => { r.checked = r.value === "trash"; });
+  document.getElementById("delete-confirm-row").style.display = "none";
+  const btn = document.getElementById("delete-btn-confirm");
+  if (btn) btn.disabled = false;
+  document.getElementById("delete-modal-status").textContent = "";
+  document.getElementById("delete-modal-overlay").classList.add("open");
+}
+
+function closeDeleteModal() {
+  document.getElementById("delete-modal-overlay").classList.remove("open");
+  _deleteFilePath = "";
+}
+
+function setDeleteMode(mode) {
+  _deleteMode = mode;
+  const row = document.getElementById("delete-confirm-row");
+  const btn = document.getElementById("delete-btn-confirm");
+  if (mode === "hard") {
+    row.style.display = "";
+    if (btn) btn.disabled = true;
+    const input = document.getElementById("delete-confirm-input");
+    if (input) input.value = "";
+  } else {
+    row.style.display = "none";
+    if (btn) btn.disabled = false;
+  }
+}
+
+function checkDeleteConfirm() {
+  const input = document.getElementById("delete-confirm-input");
+  const btn = document.getElementById("delete-btn-confirm");
+  const name = _deleteFilePath.split("/").pop();
+  if (btn) btn.disabled = input.value !== name;
+}
+
+async function doDelete() {
+  const status = document.getElementById("delete-modal-status");
+  const btn = document.getElementById("delete-btn-confirm");
+  if (btn) btn.disabled = true;
+  status.textContent = "deleting…";
+  try {
+    const r = await fetch("/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: _deleteFilePath, mode: _deleteMode }),
+    });
+    if (!r.ok) {
+      const data = await r.json().catch(() => ({}));
+      status.style.color = "#f85149";
+      status.textContent = `Error: ${data.error ?? r.status}`;
+      if (btn) btn.disabled = false;
+      return;
+    }
+    closeDeleteModal();
+    await loadFiles();
+  } catch (e) {
+    status.style.color = "#f85149";
+    status.textContent = `Error: ${e.message}`;
+    if (btn) btn.disabled = false;
+  }
+}
+
+function renderTree(files, projectRoots = []) {
   const tree = document.getElementById("tree");
   tree.replaceChildren();
-  if (files.length === 0) {
+  if (files.length === 0 && projectRoots.length === 0) {
     tree.appendChild(el("div", { class: "tree-loading" }, ["No files found in allowlist."]));
     return;
   }
@@ -93,6 +230,8 @@ function renderTree(files) {
     if (!list || list.length === 0) continue;
     tree.appendChild(renderGroup(group, list));
   }
+  const rootsSection = renderProjectRootsSection(files, projectRoots);
+  if (rootsSection) tree.appendChild(rootsSection);
   markEditableFiles();
 }
 
@@ -108,7 +247,7 @@ async function loadFiles() {
     const r = await fetch("/files");
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const body = await r.json();
-    renderTree(body.files);
+    renderTree(body.files, body.projectRoots ?? []);
   } catch (e) {
     tree.replaceChildren(
       el("div", { class: "tree-loading" }, [`Error loading files: ${e.message}`]),
@@ -501,6 +640,9 @@ document.addEventListener("keydown", (e) => {
       saveSkill();
     }
     if (e.key === "Escape") closeSkillEditor();
+  }
+  if (e.key === "Escape" && document.getElementById("delete-modal-overlay").classList.contains("open")) {
+    closeDeleteModal();
   }
 });
 

@@ -72,6 +72,31 @@
     </div>
   </div>
 </div>
+<!-- Delete modal -->
+<div id="delete-modal-overlay" onclick="if(event.target===this) closeDeleteModal()">
+  <div id="delete-modal">
+    <div id="delete-modal-header">
+      <span>Delete file</span>
+      <button id="delete-modal-close" onclick="closeDeleteModal()">✕</button>
+    </div>
+    <div id="delete-modal-body">
+      <div id="delete-modal-path"></div>
+      <div id="delete-mode-selector">
+        <label><input type="radio" name="delete-mode" value="trash" checked onchange="setDeleteMode('trash')"> Move to trash</label>
+        <label><input type="radio" name="delete-mode" value="hard" onchange="setDeleteMode('hard')"> Delete permanently</label>
+      </div>
+      <div id="delete-confirm-row" style="display:none">
+        <span>Type <strong id="delete-confirm-name"></strong> to confirm:</span>
+        <input id="delete-confirm-input" type="text" autocomplete="off" oninput="checkDeleteConfirm()">
+      </div>
+    </div>
+    <div id="delete-modal-footer">
+      <span id="delete-modal-status"></span>
+      <button class="modal-btn modal-btn-cancel" onclick="closeDeleteModal()">Cancel</button>
+      <button class="modal-btn delete-btn-confirm" id="delete-btn-confirm" onclick="doDelete()">Delete</button>
+    </div>
+  </div>
+</div>
 <!-- Conflict diff modal -->
 <div id="conflict-modal-overlay" onclick="if(event.target===this) closeConflictModal()">
   <div id="conflict-modal">
