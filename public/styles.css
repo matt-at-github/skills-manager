@@ -328,4 +328,66 @@
   .modal-btn-discard { background: #3d1a1a; color: #f85149; border: 1px solid #6e1a1a; }
   .modal-btn-discard:hover { background: #6e1a1a; color: #fff; }
 
+  /* ── Instruction file create/delete buttons ── */
+  .create-instr-btn {
+    padding: 2px 10px; font-family: inherit; font-size: 0.7rem;
+    background: #161b22; color: #6e7681; border: 1px dashed #30363d;
+    border-radius: 5px; cursor: pointer; transition: color 0.1s, border-color 0.1s;
+  }
+  .create-instr-btn:hover { color: #3fb950; border-color: #238636; }
+
+  .instr-delete-btn {
+    margin-left: auto; padding: 1px 4px; font-size: 0.72rem;
+    background: none; border: none; color: #6e7681; cursor: pointer;
+    border-radius: 3px; flex-shrink: 0;
+  }
+  .instr-delete-btn:hover { color: #f85149; background: #3d1a1a; }
+
+  /* ── Delete modal ── */
+  #delete-modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.8); z-index: 1200;
+    align-items: center; justify-content: center;
+  }
+  #delete-modal-overlay.open { display: flex; }
+  #delete-modal {
+    background: #161b22; border: 1px solid #f85149; border-radius: 12px;
+    width: 460px; max-width: 96vw;
+    display: flex; flex-direction: column; overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+  }
+  #delete-modal-header {
+    padding: 12px 16px; border-bottom: 1px solid #21262d;
+    display: flex; align-items: center; gap: 10px;
+    color: #f85149; font-size: 0.85rem; font-weight: 600;
+  }
+  #delete-modal-close {
+    margin-left: auto; background: none; border: none; color: #6e7681;
+    cursor: pointer; font-size: 1.1rem; padding: 2px 4px; border-radius: 4px;
+  }
+  #delete-modal-close:hover { color: #f85149; }
+  #delete-modal-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+  #delete-modal-path {
+    font-family: inherit; font-size: 0.72rem; color: #6e7681;
+    word-break: break-all; padding: 6px 8px;
+    background: #0d1117; border-radius: 5px; border: 1px solid #21262d;
+  }
+  #delete-mode-selector { display: flex; gap: 16px; font-size: 0.78rem; color: #c9d1d9; }
+  #delete-mode-selector label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  #delete-confirm-row { display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem; color: #8b949e; }
+  #delete-confirm-input {
+    padding: 5px 8px; background: #0d1117; color: #c9d1d9;
+    border: 1px solid #30363d; border-radius: 5px;
+    font-family: inherit; font-size: 0.72rem; outline: none;
+  }
+  #delete-confirm-input:focus { border-color: #f85149; }
+  #delete-modal-footer {
+    padding: 10px 16px; border-top: 1px solid #21262d;
+    display: flex; align-items: center; gap: 8px; justify-content: flex-end;
+  }
+  #delete-modal-status { flex: 1; font-size: 0.7rem; color: #6e7681; }
+  .delete-btn-confirm { background: #3d1a1a; color: #f85149; border: 1px solid #da3633; }
+  .delete-btn-confirm:hover:not(:disabled) { background: #6e1a1a; color: #fff; }
+  .delete-btn-confirm:disabled { background: #161b22; color: #484f58; border-color: #21262d; cursor: not-allowed; }
+
   code { background: #161b22; padding: 0 4px; border-radius: 3px; color: #d2a8ff; font-size: 0.9em; }
