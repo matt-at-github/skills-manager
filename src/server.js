@@ -30,6 +30,26 @@ async function resolveProjectRoots(projectRoots) {
   }));
 }
 
+const SKIP_DIRS = new Set([".git", "node_modules", ".next", "dist", "build", "__pycache__", ".svn", ".hg"]);
+
+async function walkInstructionFiles(dir, out = []) {
+  let entries;
+  try {
+    entries = await fs.readdir(dir, { withFileTypes: true });
+  } catch {
+    return out;
+  }
+  for (const e of entries) {
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) {
+      if (!SKIP_DIRS.has(e.name)) await walkInstructionFiles(full, out);
+    } else if ((e.isFile() || e.isSymbolicLink()) && INSTRUCTION_NAMES.has(e.name)) {
+      out.push(full);
+    }
+  }
+  return out;
+}
+
 const PORT = Number(process.env.SKILL_EDITOR_PORT ?? 7842);
 const LOG_LEVEL = process.env.SKILL_EDITOR_LOG_LEVEL ?? "info";
 const log = createLogger(LOG_LEVEL);
@@ -165,8 +185,8 @@ async function handleFiles(req, res, config) {
     const seen = new Set(files.map((f) => f.path));
     const resolvedRoots = await resolveProjectRoots(config.projectRoots);
     for (const root of resolvedRoots) {
-      for (const name of INSTRUCTION_NAMES) {
-        const targetPath = path.join(root, name);
+      const instrPaths = await walkInstructionFiles(root);
+      for (const targetPath of instrPaths) {
         if (seen.has(targetPath)) continue;
         try {
           const st = await fs.stat(targetPath);
@@ -178,7 +198,7 @@ async function handleFiles(req, res, config) {
           });
           seen.add(targetPath);
         } catch {
-          // file doesn't exist, skip
+          // skip unreachable
         }
       }
     }
