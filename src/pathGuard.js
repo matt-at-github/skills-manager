@@ -14,6 +14,8 @@ function hasTraversalSegment(p) {
   return p.split(/[/\\]/).some((seg) => seg === "..");
 }
 
+const DEFAULT_INSTRUCTION_NAMES = new Set(["CLAUDE.md", "AGENTS.md"]);
+
 export async function createGuard(config) {
   const fileRealSet = new Set();
   for (const f of config.files) {
@@ -27,6 +29,15 @@ export async function createGuard(config) {
     const real = (await tryRealpath(expanded)) ?? path.resolve(expanded);
     dirs.push({ real, extensions: new Set(d.extensions.map((e) => e.toLowerCase())) });
   }
+  const projectRootReals = [];
+  for (const r of config.projectRoots ?? []) {
+    const expanded = expandHome(r);
+    const real = (await tryRealpath(expanded)) ?? path.resolve(expanded);
+    projectRootReals.push(real);
+  }
+  const instrNames = config.instructionFileNames
+    ? new Set(config.instructionFileNames)
+    : DEFAULT_INSTRUCTION_NAMES;
 
   async function check(input, _op) {
     if (typeof input !== "string" || input.length === 0) {
@@ -49,11 +60,19 @@ export async function createGuard(config) {
     for (const d of dirs) {
       const inside = real === d.real || real.startsWith(d.real + path.sep);
       if (!inside) continue;
-      if (real === d.real) continue; // directory itself, not a file
+      if (real === d.real) continue;
       if (!d.extensions.has(ext)) {
         return { ok: false, reason: "extension_not_allowed" };
       }
       return { ok: true, resolved: real };
+    }
+    const basename = path.basename(real);
+    if (instrNames.has(basename)) {
+      for (const root of projectRootReals) {
+        if (real.startsWith(root + path.sep)) {
+          return { ok: true, resolved: real };
+        }
+      }
     }
     return { ok: false, reason: "not_in_allowlist" };
   }
