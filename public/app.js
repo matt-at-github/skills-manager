@@ -768,8 +768,12 @@ async function doDelete() {
       if (btn) btn.disabled = false;
       return;
     }
+    _lastFiles = _lastFiles.filter(f => f.path !== _deleteFilePath);
+    const header = document.querySelector(`.file-header[data-file-path="${CSS.escape(_deleteFilePath)}"]`);
+    if (header) {
+      header.closest('.tree-node')?.remove();
+    }
     closeDeleteModal();
-    await loadFiles();
   } catch (e) {
     status.style.color = '#f85149';
     status.textContent = `Error: ${e.message}`;
