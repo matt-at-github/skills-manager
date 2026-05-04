@@ -374,6 +374,126 @@ async function saveSkill() {
   }
 }
 
+// ── Config panel ───────────────────────────────────────────────────────
+
+let _cfg = { files: [], directories: [], projectRoots: [] };
+
+function renderConfigBody() {
+  const body = document.getElementById("config-modal-body");
+  body.replaceChildren();
+
+  function section(title, items, renderItem, addRow) {
+    const heading = el("div", { class: "cfg-section-title" }, [title]);
+    const list = el("div", { class: "cfg-list" }, items.map(renderItem));
+    const add = el("div", { class: "cfg-add-row" }, addRow);
+    body.appendChild(el("div", { class: "cfg-section" }, [heading, list, add]));
+  }
+
+  section("Files", _cfg.files,
+    (f, i) => el("div", { class: "cfg-item" }, [
+      el("span", { class: "cfg-item-text" }, [f]),
+      el("button", { class: "cfg-remove-btn", onclick: () => { _cfg.files.splice(i, 1); renderConfigBody(); } }, ["✕"]),
+    ]),
+    [
+      el("input", { class: "cfg-input", id: "cfg-file-input", placeholder: "/path/to/CLAUDE.md or ~/..." }),
+      el("button", { class: "modal-btn cfg-add-btn", onclick: () => {
+        const v = document.getElementById("cfg-file-input").value.trim();
+        if (v) { _cfg.files.push(v); renderConfigBody(); }
+      }}, ["Add"]),
+    ]
+  );
+
+  section("Directories", _cfg.directories,
+    (d, i) => el("div", { class: "cfg-item" }, [
+      el("span", { class: "cfg-item-text" }, [`${d.path}  ${d.extensions.join(", ")}`]),
+      el("button", { class: "cfg-remove-btn", onclick: () => { _cfg.directories.splice(i, 1); renderConfigBody(); } }, ["✕"]),
+    ]),
+    [
+      el("input", { class: "cfg-input cfg-input-sm", id: "cfg-dir-path", placeholder: "path" }),
+      el("input", { class: "cfg-input cfg-input-sm", id: "cfg-dir-exts", placeholder: ".md, .txt" }),
+      el("button", { class: "modal-btn cfg-add-btn", onclick: () => {
+        const p = document.getElementById("cfg-dir-path").value.trim();
+        const exts = document.getElementById("cfg-dir-exts").value.split(",").map((s) => s.trim()).filter(Boolean);
+        if (p && exts.length) { _cfg.directories.push({ path: p, extensions: exts }); renderConfigBody(); }
+      }}, ["Add"]),
+    ]
+  );
+
+  section("Project Roots", _cfg.projectRoots,
+    (r, i) => el("div", { class: "cfg-item" }, [
+      el("span", { class: "cfg-item-text" }, [r]),
+      el("button", { class: "cfg-remove-btn", onclick: () => { _cfg.projectRoots.splice(i, 1); renderConfigBody(); } }, ["✕"]),
+    ]),
+    [
+      el("input", { class: "cfg-input", id: "cfg-root-input", placeholder: "~/projects/myapp" }),
+      el("button", { class: "modal-btn cfg-add-btn", onclick: () => {
+        const v = document.getElementById("cfg-root-input").value.trim();
+        if (v) { _cfg.projectRoots.push(v); renderConfigBody(); }
+      }}, ["Add"]),
+    ]
+  );
+}
+
+async function openConfigPanel() {
+  if (!serverOnline) {
+    alert("Start the skills-manager server first:\n\nnpm start");
+    return;
+  }
+  document.getElementById("config-modal-status").textContent = "loading…";
+  document.getElementById("config-modal-status").style.color = "";
+  document.getElementById("config-modal-overlay").classList.add("open");
+  document.getElementById("config-modal-body").replaceChildren();
+  try {
+    const r = await fetch("/config");
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    _cfg = {
+      files: [...(data.files ?? [])],
+      directories: (data.directories ?? []).map((d) => ({ ...d, extensions: [...d.extensions] })),
+      projectRoots: [...(data.projectRoots ?? [])],
+    };
+    document.getElementById("config-modal-status").textContent = "";
+    renderConfigBody();
+  } catch (e) {
+    document.getElementById("config-modal-status").style.color = "#f85149";
+    document.getElementById("config-modal-status").textContent = `Error: ${e.message}`;
+  }
+}
+
+function closeConfigPanel() {
+  document.getElementById("config-modal-overlay").classList.remove("open");
+}
+
+async function saveConfig() {
+  const status = document.getElementById("config-modal-status");
+  const saveBtn = document.querySelector(".config-btn-save");
+  status.textContent = "saving…";
+  status.style.color = "";
+  saveBtn.disabled = true;
+  try {
+    const r = await fetch("/config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(_cfg),
+    });
+    const data = await r.json();
+    if (!r.ok) {
+      status.style.color = "#f85149";
+      status.textContent = data.error ?? `Error ${r.status}`;
+      return;
+    }
+    status.style.color = "#3fb950";
+    status.textContent = "saved ✓";
+    setTimeout(() => closeConfigPanel(), 800);
+    loadFiles();
+  } catch (e) {
+    status.style.color = "#f85149";
+    status.textContent = `Error: ${e.message}`;
+  } finally {
+    saveBtn.disabled = false;
+  }
+}
+
 document.addEventListener("keydown", (e) => {
   if (document.getElementById("skill-modal-overlay").classList.contains("open")) {
     if ((e.ctrlKey || e.metaKey) && e.key === "s") {

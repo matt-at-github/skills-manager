@@ -14,6 +14,7 @@
 <div class="toolbar">
   <button class="btn" onclick="expandAll()">expand all</button>
   <button class="btn" onclick="collapseAll()">collapse all</button>
+  <button class="btn btn-config" onclick="openConfigPanel()">⚙ config</button>
   <div class="server-status" id="server-status">
     <div class="server-dot" id="server-dot"></div>
     <span id="server-status-text">checking…</span>
@@ -53,6 +54,21 @@
       </span>
       <button class="modal-btn modal-btn-cancel" onclick="closeSkillEditor()">Cancel</button>
       <button class="modal-btn modal-btn-save" onclick="saveSkill()" disabled>Save</button>
+    </div>
+  </div>
+</div>
+<!-- Config panel modal -->
+<div id="config-modal-overlay" onclick="if(event.target===this) closeConfigPanel()">
+  <div id="config-modal">
+    <div id="config-modal-header">
+      <span>Config</span>
+      <button id="config-modal-close" onclick="closeConfigPanel()">✕</button>
+    </div>
+    <div id="config-modal-body"></div>
+    <div id="config-modal-footer">
+      <span id="config-modal-status"></span>
+      <button class="modal-btn modal-btn-cancel" onclick="closeConfigPanel()">Cancel</button>
+      <button class="modal-btn config-btn-save" onclick="saveConfig()">Save</button>
     </div>
   </div>
 </div>
