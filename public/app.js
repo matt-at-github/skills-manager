@@ -127,16 +127,20 @@ function renderFileRow(file) {
 
   // Inline editor
   const textarea = el('textarea', { class: 'inline-textarea', spellcheck: 'false' });
+  const renderDiv = el('div', { class: 'inline-render' });
   const statusSpan = el('span', { class: 'inline-status' });
+  const editModeBtn = el('button', { class: 'btn inline-edit-mode-btn', title: 'Edit' }, ['✎']);
+  const renderModeBtn = el('button', { class: 'btn inline-render-mode-btn', title: 'Preview' }, ['👁']);
   const popoutBtn = el('span', { class: 'inline-popout-btn', title: 'Open in popup editor' }, ['✎']);
   const saveBtn = el('button', { class: 'btn inline-save-btn' }, ['Save']);
   saveBtn.disabled = true;
-  const footer = el('div', { class: 'inline-footer' }, [statusSpan, popoutBtn, saveBtn]);
-  const inlineEditor = el('div', { class: 'inline-editor' }, [textarea, footer]);
+  const footer = el('div', { class: 'inline-footer' }, [statusSpan, editModeBtn, renderModeBtn, popoutBtn, saveBtn]);
+  const inlineEditor = el('div', { class: 'inline-editor' }, [renderDiv, textarea, footer]);
 
   // Per-instance state
   let mtime = 0;
   let dirty = false;
+  let inEditMode = false;
 
   function setStatus(text, color = '') {
     statusSpan.textContent = text;
@@ -154,6 +158,27 @@ function renderFileRow(file) {
     textarea.style.height = Math.min(textarea.scrollHeight, 500) + 'px';
   }
 
+  function showRender(content) {
+    renderDiv.innerHTML = marked.parse(content ?? '');
+    renderDiv.style.display = '';
+    textarea.style.display = 'none';
+    editModeBtn.style.display = '';
+    renderModeBtn.style.display = 'none';
+    saveBtn.style.display = 'none';
+    inEditMode = false;
+  }
+
+  function showEdit() {
+    renderDiv.style.display = 'none';
+    textarea.style.display = '';
+    editModeBtn.style.display = 'none';
+    renderModeBtn.style.display = '';
+    saveBtn.style.display = '';
+    autoResize();
+    textarea.focus();
+    inEditMode = true;
+  }
+
   async function openInline() {
     if (!serverOnline) { alert('Start the skills-manager server first:\n\nnpm start'); return; }
     inlineEditor.classList.add('open');
@@ -161,13 +186,14 @@ function renderFileRow(file) {
     setStatus('loading…');
     saveBtn.disabled = true;
     textarea.value = '';
+    renderDiv.innerHTML = '';
     try {
       const data = await loadFile(file.path);
       mtime = data.mtime;
       textarea.value = data.content;
       setStatus('');
       setDirty(false);
-      autoResize();
+      showRender(data.content);
     } catch (e) {
       if (e.status === 404) { setStatus('File not found on disk.', '#f85149'); return; }
       if (e.status === 403) { setStatus('Access denied.', '#f85149'); return; }
@@ -184,7 +210,9 @@ function renderFileRow(file) {
     header.classList.remove('expanded');
     setDirty(false);
     textarea.value = '';
+    renderDiv.innerHTML = '';
     setStatus('');
+    inEditMode = false;
     return true;
   }
 
@@ -199,6 +227,7 @@ function renderFileRow(file) {
       setDirty(false);
       setStatus('saved ✓', '#3fb950');
       setTimeout(() => setStatus(''), 2000);
+      showRender(content);
     } catch (e) {
       if (e.status === 409) {
         saveBtn.disabled = false;
@@ -214,6 +243,7 @@ function renderFileRow(file) {
               setDirty(false);
               setStatus('saved ✓', '#3fb950');
               setTimeout(() => setStatus(''), 2000);
+              showRender(resolvedContent);
             } catch (err) {
               setStatus(`Error: ${err.message}`, '#f85149');
               saveBtn.disabled = false;
@@ -224,7 +254,7 @@ function renderFileRow(file) {
             textarea.value = theirContent;
             setDirty(false);
             setStatus('');
-            autoResize();
+            showRender(theirContent);
           },
         );
         return;
@@ -240,6 +270,8 @@ function renderFileRow(file) {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); doSave(); }
   });
   saveBtn.addEventListener('click', doSave);
+  editModeBtn.addEventListener('click', (e) => { e.stopPropagation(); showEdit(); });
+  renderModeBtn.addEventListener('click', (e) => { e.stopPropagation(); showRender(textarea.value); });
 
   editBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -533,6 +565,28 @@ function closeSkillEditor() {
   set404Actions(false);
   _currentPath = '';
   _lastMtime = 0;
+  // reset preview state
+  document.getElementById('skill-modal-render').style.display = 'none';
+  document.getElementById('skill-modal-textarea').style.display = '';
+  const pvBtn = document.querySelector('.modal-btn-preview');
+  if (pvBtn) pvBtn.textContent = '👁 Preview';
+}
+
+function toggleModalPreview() {
+  const textarea = document.getElementById('skill-modal-textarea');
+  const renderDiv = document.getElementById('skill-modal-render');
+  const pvBtn = document.querySelector('.modal-btn-preview');
+  const isPreviewing = renderDiv.style.display !== 'none';
+  if (isPreviewing) {
+    renderDiv.style.display = 'none';
+    textarea.style.display = '';
+    pvBtn.textContent = '👁 Preview';
+  } else {
+    renderDiv.innerHTML = marked.parse(textarea.value ?? '');
+    renderDiv.style.display = '';
+    textarea.style.display = 'none';
+    pvBtn.textContent = '✎ Edit';
+  }
 }
 
 async function saveSkill() {

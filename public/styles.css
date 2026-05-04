@@ -210,6 +210,40 @@
     font-size: 1.1rem; line-height: 1; padding: 2px 4px; border-radius: 4px; flex-shrink: 0;
   }
   #skill-modal-close:hover { color: #f85149; background: #3d1a1a; }
+  #skill-modal-render {
+    flex: 1; overflow-y: auto; padding: 14px 16px;
+    color: #c9d1d9; font-size: 0.75rem; line-height: 1.7;
+  }
+  #skill-modal-render h1, #skill-modal-render h2, #skill-modal-render h3,
+  #skill-modal-render h4, #skill-modal-render h5, #skill-modal-render h6 {
+    color: #e6edf3; margin: 0.8em 0 0.4em; font-weight: 600; line-height: 1.3;
+  }
+  #skill-modal-render h1 { font-size: 1.2em; border-bottom: 1px solid #21262d; padding-bottom: 0.2em; }
+  #skill-modal-render h2 { font-size: 1.05em; border-bottom: 1px solid #21262d; padding-bottom: 0.2em; }
+  #skill-modal-render h3 { font-size: 0.95em; }
+  #skill-modal-render p { margin: 0.5em 0; }
+  #skill-modal-render ul, #skill-modal-render ol { padding-left: 1.4em; margin: 0.4em 0; }
+  #skill-modal-render li { margin: 0.2em 0; }
+  #skill-modal-render code {
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 0.85em; background: #1c2128; border-radius: 3px;
+    padding: 0.1em 0.35em; color: #a5b4fc;
+  }
+  #skill-modal-render pre {
+    background: #1c2128; border-radius: 6px; padding: 10px 12px;
+    overflow-x: auto; margin: 0.6em 0;
+  }
+  #skill-modal-render pre code { background: none; padding: 0; color: #c9d1d9; }
+  #skill-modal-render blockquote {
+    border-left: 3px solid #30363d; margin: 0.6em 0;
+    padding: 0.3em 0.8em; color: #8b949e;
+  }
+  #skill-modal-render a { color: #58a6ff; text-decoration: none; }
+  #skill-modal-render a:hover { text-decoration: underline; }
+  #skill-modal-render hr { border: none; border-top: 1px solid #21262d; margin: 0.8em 0; }
+  #skill-modal-render table { border-collapse: collapse; font-size: 0.85em; width: 100%; }
+  #skill-modal-render th, #skill-modal-render td { border: 1px solid #21262d; padding: 4px 8px; }
+  #skill-modal-render th { background: #1c2128; color: #e6edf3; }
   #skill-modal-textarea {
     flex: 1; min-height: 340px; padding: 14px 16px;
     background: #0d1117; color: #c9d1d9; border: none; resize: none;
@@ -233,6 +267,8 @@
   .modal-btn-remove { background: #3d1a1a; color: #f85149; border: 1px solid #6e1a1a; }
   .modal-btn-remove:hover { background: #6e1a1a; color: #fff; }
   .modal-btn-recreate { background: #161b22; color: #8b949e; border: 1px solid #30363d; }
+  .modal-btn-preview { background: #161b22; color: #8b949e; border: 1px solid #30363d; }
+  .modal-btn-preview:hover { color: #58a6ff; border-color: #1f6feb; background: #1a2240; }
   .modal-btn-recreate:hover { border-color: #6e7681; color: #c9d1d9; }
 
   .toast {
@@ -474,3 +510,47 @@
   }
   .inline-save-btn:hover:not(:disabled) { background: #238636; color: #fff; }
   .inline-save-btn:disabled { background: #161b22; color: #484f58; border-color: #21262d; cursor: not-allowed; }
+
+  .inline-edit-mode-btn, .inline-render-mode-btn {
+    padding: 2px 8px; font-size: 0.7rem;
+    background: #161b22; color: #8b949e; border: 1px solid #21262d;
+  }
+  .inline-edit-mode-btn:hover, .inline-render-mode-btn:hover {
+    color: #58a6ff; border-color: #1f6feb; background: #1a2240;
+  }
+
+  .inline-render {
+    width: 100%; max-height: 500px; overflow-y: auto;
+    padding: 12px 14px; color: #c9d1d9;
+    font-size: 0.75rem; line-height: 1.7; box-sizing: border-box;
+  }
+  .inline-render h1, .inline-render h2, .inline-render h3,
+  .inline-render h4, .inline-render h5, .inline-render h6 {
+    color: #e6edf3; margin: 0.8em 0 0.4em; font-weight: 600; line-height: 1.3;
+  }
+  .inline-render h1 { font-size: 1.2em; border-bottom: 1px solid #21262d; padding-bottom: 0.2em; }
+  .inline-render h2 { font-size: 1.05em; border-bottom: 1px solid #21262d; padding-bottom: 0.2em; }
+  .inline-render h3 { font-size: 0.95em; }
+  .inline-render p { margin: 0.5em 0; }
+  .inline-render ul, .inline-render ol { padding-left: 1.4em; margin: 0.4em 0; }
+  .inline-render li { margin: 0.2em 0; }
+  .inline-render code {
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 0.85em; background: #1c2128; border-radius: 3px;
+    padding: 0.1em 0.35em; color: #a5b4fc;
+  }
+  .inline-render pre {
+    background: #1c2128; border-radius: 6px; padding: 10px 12px;
+    overflow-x: auto; margin: 0.6em 0;
+  }
+  .inline-render pre code { background: none; padding: 0; color: #c9d1d9; }
+  .inline-render blockquote {
+    border-left: 3px solid #30363d; margin: 0.6em 0;
+    padding: 0.3em 0.8em; color: #8b949e;
+  }
+  .inline-render a { color: #58a6ff; text-decoration: none; }
+  .inline-render a:hover { text-decoration: underline; }
+  .inline-render hr { border: none; border-top: 1px solid #21262d; margin: 0.8em 0; }
+  .inline-render table { border-collapse: collapse; font-size: 0.85em; width: 100%; }
+  .inline-render th, .inline-render td { border: 1px solid #21262d; padding: 4px 8px; }
+  .inline-render th { background: #1c2128; color: #e6edf3; }

@@ -37,6 +37,7 @@
 </div>
 
 
+<script src="/marked.min.js"></script>
 <script src="/app.js"></script>
 <!-- Skill editor modal -->
 <div id="skill-modal-overlay" onclick="if(event.target===this) closeSkillEditor()">
@@ -46,6 +47,7 @@
       <span id="skill-modal-path"></span>
       <button id="skill-modal-close" onclick="closeSkillEditor()">✕</button>
     </div>
+    <div id="skill-modal-render" style="display:none"></div>
     <textarea id="skill-modal-textarea" spellcheck="false"></textarea>
     <div id="skill-modal-footer">
       <span id="skill-modal-status"></span>
@@ -53,6 +55,7 @@
         <button class="modal-btn modal-btn-remove" onclick="removeFileFromList()">Remove from list</button>
         <button class="modal-btn modal-btn-recreate" onclick="closeSkillEditor()">Recreate…</button>
       </span>
+      <button class="modal-btn modal-btn-preview" onclick="toggleModalPreview()" title="Preview">👁 Preview</button>
       <button class="modal-btn modal-btn-cancel" onclick="closeSkillEditor()">Cancel</button>
       <button class="modal-btn modal-btn-save" onclick="saveSkill()" disabled>Save</button>
     </div>
