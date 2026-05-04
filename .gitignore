@@ -3,6 +3,10 @@ node_modules/
 config.json
 *.log
 .DS_Store
+package-lock.json
+npm-debug.log*
+.vscode/
+.idea/
 
 # Local-only reference artifacts (contain private data, redact before publishing)
 claude-instructions-map.html

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>skills-manager</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<h1>Claude Instruction Map</h1>
+<p class="subtitle">All CLAUDE.md and AGENTS.md files · MCP servers and skills nested where they apply · click to expand</p>
+
+<div class="toolbar">
+  <button class="btn" onclick="expandAll()">expand all</button>
+  <button class="btn" onclick="collapseAll()">collapse all</button>
+  <div class="server-status" id="server-status">
+    <div class="server-dot" id="server-dot"></div>
+    <span id="server-status-text">checking…</span>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><span class="badge badge-claude">CLAUDE.md</span> Claude Code instructions</div>
+  <div class="legend-item"><span class="badge badge-agents">AGENTS.md</span> Agent instructions</div>
+  <div class="legend-item"><span class="badge badge-symlink">⇢ symlink</span> Points to another file</div>
+  <div class="legend-item"><span class="badge badge-global">GLOBAL</span> Applies to all sessions</div>
+  <div class="legend-item"><span class="badge badge-deprecated">DEPRECATED</span> Do not use</div>
+  <div class="legend-item"><span class="badge badge-mcp">MCP</span> MCP Server</div>
+  <div class="legend-item"><span class="badge badge-skill">SKILLS</span> Skills</div>
+</div>
+
+<div class="tree" id="tree">
+  <div class="tree-loading">loading…</div>
+</div>
+
+
+<script src="/app.js"></script>
+<!-- Skill editor modal -->
+<div id="skill-modal-overlay" onclick="if(event.target===this) closeSkillEditor()">
+  <div id="skill-modal">
+    <div id="skill-modal-header">
+      <span id="skill-modal-name"></span>
+      <span id="skill-modal-path"></span>
+      <button id="skill-modal-close" onclick="closeSkillEditor()">✕</button>
+    </div>
+    <textarea id="skill-modal-textarea" spellcheck="false"></textarea>
+    <div id="skill-modal-footer">
+      <span id="skill-modal-status"></span>
+      <button class="modal-btn modal-btn-cancel" onclick="closeSkillEditor()">Cancel</button>
+      <button class="modal-btn modal-btn-save" onclick="saveSkill()" disabled>Save</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
