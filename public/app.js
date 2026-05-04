@@ -121,13 +121,9 @@ function renderFileRow(file) {
   const popoutBtn = el('button', { class: 'btn inline-popout-btn', title: 'Open in popup editor' }, ['↗']);
   const rowChildren = [nameGroup, editModeBtn, renderModeBtn, popoutBtn];
 
-  const isInRoot = file.type === 'instructionFile' &&
-    _projectRoots.some(r => file.path.startsWith(r + '/'));
-  if (isInRoot) {
-    const delBtn = el('span', { class: 'instr-delete-btn', title: 'Delete ' + name }, ['🗑']);
-    delBtn.addEventListener('click', (e) => { e.stopPropagation(); openDeleteModal(file.path); });
-    rowChildren.push(delBtn);
-  }
+  const delBtn = el('span', { class: 'instr-delete-btn', title: 'Delete ' + name }, ['🗑']);
+  delBtn.addEventListener('click', (e) => { e.stopPropagation(); openDeleteModal(file.path); });
+  rowChildren.push(delBtn);
 
   const header = el('div', {
     class: 'file-header',

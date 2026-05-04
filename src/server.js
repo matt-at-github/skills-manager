@@ -274,27 +274,20 @@ async function handleDelete(req, res, state) {
     writeJson(res, 400, { error: "invalid_mode" });
     return;
   }
-  const basename = path.basename(typeof inputPath === "string" ? inputPath : "");
-  if (!getInstructionNames(state.config).has(basename)) {
-    writeJson(res, 403, { error: "filename_not_allowed" });
-    return;
-  }
-  if (!state.config) {
+  if (!state.guard) {
     writeJson(res, 503, { error: "config_unavailable" });
     return;
   }
-  const resolvedRoots = await resolveProjectRoots(state.config.projectRoots);
-  const resolvedInput = await fs.realpath(typeof inputPath === "string" ? inputPath : "").catch(() => path.resolve(typeof inputPath === "string" ? inputPath : ""));
-  const inRoot = resolvedRoots.some((r) => resolvedInput === r || resolvedInput.startsWith(r + path.sep));
-  if (!inRoot) {
-    writeJson(res, 403, { error: "path_not_in_projectRoot" });
+  const allowed = await state.guard.check(inputPath, "delete");
+  if (!allowed.ok) {
+    writeJson(res, 403, { error: allowed.reason });
     return;
   }
   try {
     if (mode === "trash") {
-      await trash(resolvedInput);
+      await trash(allowed.resolved);
     } else {
-      await fs.unlink(resolvedInput);
+      await fs.unlink(allowed.resolved);
     }
     writeJson(res, 200, { ok: true });
   } catch (err) {
