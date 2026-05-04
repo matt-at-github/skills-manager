@@ -83,16 +83,16 @@ test("POST with foreign Origin is rejected 403", async () => {
   assert.equal(res.status, 403);
 });
 
-test("POST with matching Origin passes security (route not implemented → 405)", async () => {
+test("POST with matching Origin passes security (no guard → 503)", async () => {
   const res = await fetch(`${baseUrl}/write`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Origin: baseUrl,
     },
-    body: JSON.stringify({ path: "/tmp/x", content: "" }),
+    body: JSON.stringify({ path: "/tmp/x", content: "", lastMtime: 0 }),
   });
-  assert.equal(res.status, 405);
+  assert.equal(res.status, 503);
 });
 
 test("POST with no Origin and no Referer is rejected 403", async () => {

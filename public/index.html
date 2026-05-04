@@ -56,5 +56,35 @@
     </div>
   </div>
 </div>
+<!-- Conflict diff modal -->
+<div id="conflict-modal-overlay" onclick="if(event.target===this) closeConflictModal()">
+  <div id="conflict-modal">
+    <div id="conflict-modal-header">
+      <span>Conflict: file changed externally</span>
+      <button id="conflict-modal-close" onclick="closeConflictModal()">✕</button>
+    </div>
+    <div id="conflict-modal-body">
+      <div class="conflict-pane">
+        <div class="conflict-pane-label">Your changes</div>
+        <textarea id="conflict-mine" spellcheck="false"></textarea>
+      </div>
+      <div class="conflict-pane">
+        <div class="conflict-pane-label">Current on disk</div>
+        <textarea id="conflict-theirs" spellcheck="false" readonly></textarea>
+      </div>
+    </div>
+    <div id="conflict-modal-footer">
+      <span id="conflict-footer-default">
+        <button class="modal-btn modal-btn-keep" onclick="keepMine()">Keep mine</button>
+        <button class="modal-btn modal-btn-discard" onclick="discardMine()">Discard mine</button>
+        <button class="modal-btn modal-btn-cancel" onclick="openBoth()">Open both</button>
+      </span>
+      <span id="conflict-footer-merge" style="display:none">
+        <button class="modal-btn modal-btn-keep" onclick="saveMerged()">Save merged</button>
+        <button class="modal-btn modal-btn-cancel" onclick="closeConflictModal()">Cancel</button>
+      </span>
+    </div>
+  </div>
+</div>
 </body>
 </html>

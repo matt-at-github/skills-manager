@@ -187,6 +187,8 @@ function markEditableFiles() {
 }
 
 let _currentPath = "";
+let _lastMtime = 0;
+let _conflictServerMtime = 0;
 
 function showToast(message, type = "error") {
   const toast = document.createElement("div");
@@ -247,6 +249,7 @@ async function openFileEditor(name, filePath) {
     }
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
+    _lastMtime = data.mtime;
     document.getElementById("skill-modal-textarea").value = data.content;
     status.textContent = "";
     document.querySelector(".modal-btn-save").disabled = false;
@@ -261,6 +264,80 @@ function closeSkillEditor() {
   document.getElementById("skill-modal-overlay").classList.remove("open");
   set404Actions(false);
   _currentPath = "";
+  _lastMtime = 0;
+}
+
+// ── Conflict modal ─────────────────────────────────────────────────────
+
+function openConflictModal(myContent, theirContent, serverMtime) {
+  _conflictServerMtime = serverMtime;
+  document.getElementById("conflict-mine").value = myContent;
+  document.getElementById("conflict-mine").readOnly = true;
+  document.getElementById("conflict-theirs").value = theirContent;
+  document.getElementById("conflict-footer-default").style.display = "";
+  document.getElementById("conflict-footer-merge").style.display = "none";
+  document.getElementById("conflict-modal-overlay").classList.add("open");
+}
+
+function closeConflictModal() {
+  document.getElementById("conflict-modal-overlay").classList.remove("open");
+}
+
+async function keepMine() {
+  const content = document.getElementById("conflict-mine").value;
+  closeConflictModal();
+  await forceSave(_currentPath, content, _conflictServerMtime);
+}
+
+function discardMine() {
+  const theirContent = document.getElementById("conflict-theirs").value;
+  _lastMtime = _conflictServerMtime;
+  document.getElementById("skill-modal-textarea").value = theirContent;
+  const status = document.getElementById("skill-modal-status");
+  status.style.color = "";
+  status.textContent = "";
+  document.querySelector(".modal-btn-save").disabled = false;
+  closeConflictModal();
+}
+
+function openBoth() {
+  document.getElementById("conflict-mine").readOnly = false;
+  document.getElementById("conflict-mine").focus();
+  document.getElementById("conflict-footer-default").style.display = "none";
+  document.getElementById("conflict-footer-merge").style.display = "";
+}
+
+async function saveMerged() {
+  const content = document.getElementById("conflict-mine").value;
+  closeConflictModal();
+  await forceSave(_currentPath, content, _conflictServerMtime);
+}
+
+async function forceSave(filePath, content, knownMtime) {
+  const status = document.getElementById("skill-modal-status");
+  const saveBtn = document.querySelector(".modal-btn-save");
+  status.textContent = "saving…";
+  status.style.color = "";
+  saveBtn.disabled = true;
+  try {
+    const r = await fetch("/write", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: filePath, content, lastMtime: knownMtime }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    _lastMtime = data.mtime;
+    document.getElementById("skill-modal-textarea").value = content;
+    status.style.color = "#3fb950";
+    status.textContent = "saved ✓";
+    document.querySelector(".modal-btn-save").disabled = false;
+    setTimeout(() => { status.textContent = ""; status.style.color = ""; }, 2000);
+  } catch (e) {
+    status.style.color = "#f85149";
+    status.textContent = `Error: ${e.message}`;
+    saveBtn.disabled = false;
+  }
 }
 
 async function saveSkill() {
@@ -269,20 +346,26 @@ async function saveSkill() {
   const status = document.getElementById("skill-modal-status");
   const saveBtn = document.querySelector(".modal-btn-save");
   status.textContent = "saving…";
+  status.style.color = "";
   saveBtn.disabled = true;
   try {
     const r = await fetch("/write", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path: _currentPath, content }),
+      body: JSON.stringify({ path: _currentPath, content, lastMtime: _lastMtime }),
     });
+    if (r.status === 409) {
+      const data = await r.json();
+      saveBtn.disabled = false;
+      openConflictModal(content, data.currentContent, data.currentMtime);
+      return;
+    }
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    _lastMtime = data.mtime;
     status.style.color = "#3fb950";
     status.textContent = "saved ✓";
-    setTimeout(() => {
-      status.textContent = "";
-      status.style.color = "";
-    }, 2000);
+    setTimeout(() => { status.textContent = ""; status.style.color = ""; }, 2000);
   } catch (e) {
     status.style.color = "#f85149";
     status.textContent = `Error: ${e.message}`;
