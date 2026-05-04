@@ -18,6 +18,11 @@ let _projectRoots = [];
 let _lastFiles = [];
 let _instructionNames = ['CLAUDE.md', 'AGENTS.md'];
 
+function calculateTokens(text) {
+  if (!text) return 0;
+  return Math.round(text.trim().split(/\s+/).filter(Boolean).length * 1.3);
+}
+
 function makeFolder(name, fullRelPath, isProjectRoot) {
   return { name, fullRelPath, isProjectRoot, files: [], subdirs: new Map() };
 }
@@ -116,10 +121,11 @@ function renderFileRow(file) {
   const dirPath = file.relPath.slice(0, file.relPath.lastIndexOf('/') + 1);
   const pathSpan = el('span', { class: 'file-full-path' }, [dirPath]);
   const nameGroup = el('span', { class: 'file-name-group' }, [badgeSpan, nameSpan, pathSpan]);
+  const tokenBadge = el('span', { class: 'token-badge' });
   const editModeBtn = el('button', { class: 'btn inline-edit-mode-btn', title: 'Edit inline' }, ['✎']);
   const renderModeBtn = el('button', { class: 'btn inline-render-mode-btn', title: 'Preview' }, ['👁']);
   const popoutBtn = el('button', { class: 'btn inline-popout-btn', title: 'Open in popup editor' }, ['↗']);
-  const rowChildren = [nameGroup, editModeBtn, renderModeBtn, popoutBtn];
+  const rowChildren = [nameGroup, tokenBadge, editModeBtn, renderModeBtn, popoutBtn];
 
   const delBtn = el('button', { class: 'btn instr-delete-btn', title: 'Delete ' + name }, ['🗑']);
   delBtn.addEventListener('click', (e) => { e.stopPropagation(); openDeleteModal(file.path); });
@@ -148,6 +154,9 @@ function renderFileRow(file) {
   function setStatus(text, color = '') {
     statusSpan.textContent = text;
     statusSpan.style.color = color;
+    const isError = color === '#f85149';
+    header.classList.toggle('inline-error', isError);
+    inlineEditor.classList.toggle('inline-error', isError);
   }
 
   function setDirty(val) {
@@ -162,8 +171,19 @@ function renderFileRow(file) {
     textarea.style.height = Math.min(textarea.scrollHeight, 500) + 'px';
   }
 
+  const isJson = file.path.endsWith('.json');
+
   function showRender(content) {
-    renderDiv.innerHTML = marked.parse(content ?? '');
+    if (isJson) {
+      let pretty = content ?? '';
+      try { pretty = JSON.stringify(JSON.parse(content), null, 2); } catch {}
+      const pre = document.createElement('pre');
+      pre.className = 'json-render';
+      pre.textContent = pretty;
+      renderDiv.replaceChildren(pre);
+    } else {
+      renderDiv.innerHTML = marked.parse(content ?? '');
+    }
     renderDiv.style.display = '';
     textarea.style.display = 'none';
     editModeBtn.classList.remove('mode-active');
@@ -203,6 +223,7 @@ function renderFileRow(file) {
       mtime = data.mtime;
       savedContent = data.content;
       textarea.value = data.content;
+      tokenBadge.textContent = '~' + calculateTokens(data.content);
       setStatus('');
       setDirty(false);
       showRender(data.content);
@@ -238,6 +259,7 @@ function renderFileRow(file) {
       const data = await saveFile(file.path, content, mtime);
       mtime = data.mtime;
       savedContent = content;
+      tokenBadge.textContent = '~' + calculateTokens(content);
       setDirty(false);
       setStatus('saved ✓', '#3fb950');
       setTimeout(() => setStatus(''), 2000);
@@ -516,6 +538,8 @@ function showToast(message, type = 'error') {
 
 let _currentPath = '';
 let _lastMtime = 0;
+let _aggregateCache = null;
+let _fullContextOn = false;
 
 function set404Actions(show) {
   document.getElementById('skill-modal-404-actions').style.display = show ? '' : 'none';
@@ -581,11 +605,40 @@ function closeSkillEditor() {
   set404Actions(false);
   _currentPath = '';
   _lastMtime = 0;
-  // reset preview state
+  _aggregateCache = null;
+  _fullContextOn = false;
   document.getElementById('skill-modal-render').style.display = 'none';
   document.getElementById('skill-modal-textarea').style.display = '';
   const pvBtn = document.querySelector('.modal-btn-preview');
   if (pvBtn) pvBtn.textContent = '👁 Preview';
+  const ctxBtn = document.getElementById('modal-fullctx-btn');
+  if (ctxBtn) { ctxBtn.classList.remove('mode-active'); ctxBtn.textContent = '⛶ Full Context'; }
+}
+
+function renderModalPreviewContent() {
+  const textarea = document.getElementById('skill-modal-textarea');
+  const renderDiv = document.getElementById('skill-modal-render');
+  const content = textarea.value ?? '';
+  if (_fullContextOn && _aggregateCache && _aggregateCache.length > 0) {
+    const ctxBtn = document.getElementById('modal-fullctx-btn');
+    const expandAll = el('button', { class: 'modal-btn aggregate-ctrl-btn' }, ['Expand all']);
+    const collapseAll = el('button', { class: 'modal-btn aggregate-ctrl-btn' }, ['Collapse all']);
+    const ctrlBar = el('div', { class: 'aggregate-ctrl-bar' }, [expandAll, collapseAll]);
+    expandAll.addEventListener('click', () => renderDiv.querySelectorAll('.aggregate-section').forEach(d => d.open = true));
+    collapseAll.addEventListener('click', () => renderDiv.querySelectorAll('.aggregate-section').forEach(d => d.open = false));
+    const sections = _aggregateCache.map(({ path: p, content: c }) => {
+      const summary = el('summary', { class: 'aggregate-summary' }, [p]);
+      const body = el('div', { class: 'inline-render aggregate-body' });
+      body.innerHTML = marked.parse(c ?? '');
+      return el('details', { class: 'aggregate-section' }, [summary, body]);
+    });
+    const currentLabel = el('div', { class: 'aggregate-current-label' }, ['— current —']);
+    const currentBody = el('div', { class: 'inline-render' });
+    currentBody.innerHTML = marked.parse(content);
+    renderDiv.replaceChildren(ctrlBar, ...sections, currentLabel, currentBody);
+  } else {
+    renderDiv.innerHTML = marked.parse(content);
+  }
 }
 
 function toggleModalPreview() {
@@ -598,11 +651,32 @@ function toggleModalPreview() {
     textarea.style.display = '';
     pvBtn.textContent = '👁 Preview';
   } else {
-    renderDiv.innerHTML = marked.parse(textarea.value ?? '');
+    renderModalPreviewContent();
     renderDiv.style.display = '';
     textarea.style.display = 'none';
     pvBtn.textContent = '✎ Edit';
   }
+}
+
+async function toggleFullContext() {
+  const btn = document.getElementById('modal-fullctx-btn');
+  const renderDiv = document.getElementById('skill-modal-render');
+  const isPreviewing = renderDiv.style.display !== 'none';
+  if (!_aggregateCache) {
+    btn.textContent = '⛶ loading…';
+    btn.disabled = true;
+    try {
+      const r = await fetch('/aggregate?path=' + encodeURIComponent(_currentPath));
+      _aggregateCache = await r.json();
+    } catch {
+      _aggregateCache = [];
+    }
+    btn.disabled = false;
+  }
+  _fullContextOn = !_fullContextOn;
+  btn.classList.toggle('mode-active', _fullContextOn);
+  btn.textContent = '⛶ Full Context';
+  if (isPreviewing) renderModalPreviewContent();
 }
 
 async function saveSkill() {

@@ -296,6 +296,42 @@ async function handleDelete(req, res, state) {
   }
 }
 
+async function handleAggregate(req, res, guard) {
+  if (!guard) {
+    writeJson(res, 503, { error: "config_unavailable" });
+    return;
+  }
+  const url = new URL(req.url, "http://x");
+  const input = url.searchParams.get("path") ?? "";
+  const allowed = await guard.check(input, "read");
+  if (!allowed.ok) {
+    writeJson(res, 403, { error: allowed.reason });
+    return;
+  }
+  const filename = path.basename(allowed.resolved);
+  const home = HOME;
+  const results = [];
+  const dirs = [];
+  let dir = path.dirname(allowed.resolved);
+  while (true) {
+    dirs.push(dir);
+    if (dir === home || dir === path.dirname(dir)) break;
+    dir = path.dirname(dir);
+  }
+  dirs.reverse();
+  for (const d of dirs) {
+    const candidate = path.join(d, filename);
+    try { await fs.access(candidate); } catch { continue; }
+    const ca = await guard.check(candidate, "read");
+    if (!ca.ok) continue;
+    try {
+      const data = await read(ca.resolved);
+      results.push({ path: ca.resolved, content: data.content });
+    } catch { /* skip unreadable */ }
+  }
+  writeJson(res, 200, results);
+}
+
 function handleGetConfig(req, res, config) {
   if (!config) {
     writeJson(res, 503, { error: "config_unavailable" });
@@ -373,6 +409,10 @@ export function createServer({ port = PORT, config = null, guard = null, configP
     }
     if (req.method === "GET" && urlPath === "/files") {
       handleFiles(req, res, state.config);
+      return;
+    }
+    if (req.method === "GET" && urlPath === "/aggregate") {
+      handleAggregate(req, res, state.guard);
       return;
     }
     if (req.method === "GET") {
