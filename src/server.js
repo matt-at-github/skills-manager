@@ -8,7 +8,7 @@ import { check as checkRequestSecurity } from "./requestSecurity.js";
 import { loadDefaultConfig } from "./config.js";
 import { scan } from "./scanner.js";
 import { createGuard } from "./pathGuard.js";
-import { read } from "./fsOps.js";
+import { read, write } from "./fsOps.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.resolve(__dirname, "..", "public");
@@ -61,6 +61,15 @@ async function serveStatic(req, res) {
   }
 }
 
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on("data", (c) => chunks.push(c));
+    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+    req.on("error", reject);
+  });
+}
+
 function writeJson(res, status, body) {
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
@@ -94,6 +103,41 @@ async function handleRead(req, res, guard) {
   }
 }
 
+async function handleWrite(req, res, guard) {
+  if (!guard) {
+    writeJson(res, 503, { error: "config_unavailable" });
+    return;
+  }
+  let body;
+  try {
+    body = JSON.parse(await readBody(req));
+  } catch {
+    writeJson(res, 400, { error: "bad_request" });
+    return;
+  }
+  const { path: inputPath, content, lastMtime } = body;
+  if (typeof content !== "string" || typeof lastMtime !== "number") {
+    writeJson(res, 400, { error: "bad_request" });
+    return;
+  }
+  const allowed = await guard.check(inputPath, "write");
+  if (!allowed.ok) {
+    writeJson(res, 403, { error: allowed.reason });
+    return;
+  }
+  try {
+    const result = await write(allowed.resolved, content, lastMtime);
+    if (result.conflict) {
+      writeJson(res, 409, { currentMtime: result.currentMtime, currentContent: result.currentContent });
+      return;
+    }
+    writeJson(res, 200, { mtime: result.mtime });
+  } catch (err) {
+    log.error("write failed", err);
+    writeJson(res, 500, { error: "write_failed" });
+  }
+}
+
 async function handleFiles(req, res, config) {
   if (!config) {
     writeJson(res, 503, { error: "config_unavailable" });
@@ -123,6 +167,10 @@ export function createServer({ port = PORT, config = null, guard = null } = {}) 
       return;
     }
     const urlPath = (req.url ?? "/").split("?")[0];
+    if (req.method === "POST" && urlPath === "/write") {
+      handleWrite(req, res, guard);
+      return;
+    }
     if (req.method === "GET" && urlPath === "/read") {
       handleRead(req, res, guard);
       return;
