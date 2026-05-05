@@ -238,7 +238,13 @@
     min-width: 320px; min-height: 200px;
     display: flex; flex-direction: column; overflow: hidden;
     box-shadow: 0 24px 80px rgba(0,0,0,0.6);
-    resize: both;
+    position: relative;
+  }
+  .modal-resize-handle {
+    position: absolute; bottom: 0; right: 0;
+    width: 16px; height: 16px; cursor: nwse-resize;
+    background: linear-gradient(135deg, transparent 50%, #484f58 50%, #484f58 60%, transparent 60%, transparent 70%, #484f58 70%, #484f58 80%, transparent 80%);
+    border-radius: 0 0 12px 0;
   }
   #skill-modal-header {
     padding: 14px 16px 12px; border-bottom: 1px solid #21262d;

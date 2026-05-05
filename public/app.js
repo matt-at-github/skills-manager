@@ -1315,9 +1315,33 @@ document.addEventListener('DOMContentLoaded', function () {
     if (overlay.classList.contains('open')) applyStoredSize();
   }).observe(overlay, { attributeFilter: ['class'] });
 
-  // Save after each resize drag ends
-  modal.addEventListener('mouseup', () => {
-    if (modal.style.width || modal.style.height) saveSize();
+  // Custom resize handle — tracks raw mouse delta so centering doesn't drift
+  const handle = document.createElement('div');
+  handle.className = 'modal-resize-handle';
+  modal.appendChild(handle);
+
+  handle.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startW = modal.offsetWidth;
+    const startH = modal.offsetHeight;
+
+    function onMove(e) {
+      const w = Math.max(320, startW + (e.clientX - startX));
+      const h = Math.max(200, startH + (e.clientY - startY));
+      modal.style.width = w + 'px';
+      modal.style.height = h + 'px';
+    }
+
+    function onUp() {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      saveSize();
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
   });
 });
 
