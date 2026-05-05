@@ -323,7 +323,7 @@
   .aggregate-section[open] > .aggregate-summary::before { content: '▼ '; }
   .aggregate-body { padding: 10px 14px; border-top: 1px solid #21262d; }
   .aggregate-current-section { border: 1px solid #1f6feb44; border-radius: 6px; background: #0d1f3c; margin-top: 10px; overflow: hidden; }
-  .aggregate-current-label { font-size: 0.68rem; color: #58a6ff99; text-align: center; padding: 5px 10px; letter-spacing: 0.05em; display: flex; align-items: center; justify-content: center; gap: 4px; border-bottom: 1px solid #1f6feb33; }
+  .aggregate-current-label { font-size: 0.68rem; color: #58a6ff99; padding: 5px 10px; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid #1f6feb33; }
   .aggregate-edit-btn { background: transparent; border: none; color: #484f58; padding: 0 4px; font-size: 0.75rem; cursor: pointer; margin-left: 4px; line-height: 1; }
   .aggregate-edit-btn:hover { color: #8b949e; }
   .aggregate-edit-btn:disabled { opacity: 0.4; cursor: default; }

@@ -850,7 +850,8 @@ function renderModalPreviewContent() {
     const editCurrentBtn = el('button', { class: 'btn aggregate-edit-btn', title: 'Edit current file' }, ['✎']);
     editCurrentBtn.addEventListener('click', toggleModalPreview);
     const currentTokenChip = el('span', { class: 'token-badge loaded aggregate-token-chip' }, ['~' + calculateTokens(content) + ' tokens']);
-    const currentLabel = el('div', { class: 'aggregate-current-label' }, ['— current —', currentTokenChip, editCurrentBtn]);
+    const currentLabelText = el('span', { class: 'aggregate-path' }, ['— current —']);
+    const currentLabel = el('div', { class: 'aggregate-current-label' }, [currentLabelText, currentTokenChip, editCurrentBtn]);
     const currentBody = el('div', { class: 'inline-render aggregate-body' });
     currentBody.innerHTML = marked.parse(content);
     const currentSection = el('div', { class: 'aggregate-current-section' }, [currentLabel, currentBody]);
