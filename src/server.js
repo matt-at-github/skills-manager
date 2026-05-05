@@ -353,6 +353,7 @@ async function handleAggregate(req, res, guard) {
     try { await fs.access(candidate); } catch { continue; }
     const ca = await guard.check(candidate, "read");
     if (!ca.ok) continue;
+    if (ca.resolved === allowed.resolved) continue;
     try {
       const data = await read(ca.resolved);
       results.push({ path: ca.resolved, content: data.content });
