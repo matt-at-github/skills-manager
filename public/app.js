@@ -252,14 +252,16 @@ function renderFileRow(file) {
 
   function showDiff() {
     renderDiv.style.display = 'none';
-    textarea.style.display = 'none';
+    textarea.style.display = '';
     diffDiv.style.display = '';
     editModeBtn.classList.remove('mode-active');
     renderModeBtn.classList.remove('mode-active');
     diffModeBtn.classList.add('mode-active');
     saveBtn.style.display = '';
+    autoResize();
+    textarea.focus();
     renderDiff();
-    inEditMode = false;
+    inEditMode = true;
   }
 
   function showHeaderBtns(_visible) { /* visibility handled by CSS hover/expanded */ }
@@ -278,7 +280,7 @@ function renderFileRow(file) {
         el('span', { class: 'used-by-line' }, [`:${ref.line}`]),
         el('span', { class: 'used-by-snippet' }, [ref.snippet]),
       ]);
-      row.addEventListener('click', () => openFileEditor(ref.relPath.split('/').pop(), ref.path));
+      row.addEventListener('click', () => openFileEditor(ref.relPath.split('/').pop(), ref.path, null, null, ref.line));
       return row;
     });
     usedByDiv.replaceChildren(heading, ...rows);
@@ -343,6 +345,7 @@ function renderFileRow(file) {
       savedContent = content;
       tokenBadge.textContent = '~' + calculateTokens(content) + ' tokens';
       tokenBadge.classList.add('loaded');
+      _usedByCache = null;
       setDirty(false);
       setStatus('saved ✓', '#3fb950');
       setTimeout(() => setStatus(''), 2000);
@@ -359,6 +362,7 @@ function renderFileRow(file) {
               const d = await saveFile(file.path, resolvedContent, e.data.currentMtime);
               mtime = d.mtime;
               textarea.value = resolvedContent;
+              _usedByCache = null;
               setDirty(false);
               setStatus('saved ✓', '#3fb950');
               setTimeout(() => setStatus(''), 2000);
@@ -384,7 +388,15 @@ function renderFileRow(file) {
   }
 
   // Wire up events
-  textarea.addEventListener('input', () => { setDirty(true); autoResize(); });
+  let _diffDebounce;
+  textarea.addEventListener('input', () => {
+    setDirty(true);
+    autoResize();
+    if (diffModeBtn.classList.contains('mode-active')) {
+      clearTimeout(_diffDebounce);
+      _diffDebounce = setTimeout(renderDiff, 150);
+    }
+  });
   textarea.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); doSave(); }
     if (e.key === 'Escape') {
@@ -660,7 +672,19 @@ function removeFileFromList() {
   loadFiles();
 }
 
-async function openFileEditor(name, filePath, prefillContent = null, prefillMtime = null) {
+function scrollTextareaToLine(ta, lineNumber) {
+  const lines = ta.value.split('\n');
+  const targetLine = Math.max(1, Math.min(lineNumber, lines.length));
+  let offset = 0;
+  for (let i = 0; i < targetLine - 1; i++) offset += lines[i].length + 1;
+  const end = offset + lines[targetLine - 1].length;
+  ta.setSelectionRange(offset, end);
+  // Scroll selection into view
+  const lineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 20;
+  ta.scrollTop = Math.max(0, (targetLine - 3) * lineHeight);
+}
+
+async function openFileEditor(name, filePath, prefillContent = null, prefillMtime = null, scrollToLine = null) {
   if (!serverOnline) {
     alert('Start the skills-manager server first:\n\nnpm start');
     return;
@@ -688,11 +712,13 @@ async function openFileEditor(name, filePath, prefillContent = null, prefillMtim
   try {
     const data = await loadFile(filePath);
     _lastMtime = data.mtime;
-    document.getElementById('skill-modal-textarea').value = data.content;
+    const modalTa = document.getElementById('skill-modal-textarea');
+    modalTa.value = data.content;
     setModalTokenBadge(data.content);
     status.textContent = '';
     document.querySelector('.modal-btn-save').disabled = false;
-    document.getElementById('skill-modal-textarea').focus();
+    modalTa.focus();
+    if (scrollToLine != null) scrollTextareaToLine(modalTa, scrollToLine);
   } catch (e) {
     if (e.status === 404) {
       status.style.color = '#f85149';
@@ -751,7 +777,10 @@ function renderModalPreviewContent() {
       body.innerHTML = marked.parse(c ?? '');
       return el('details', { class: 'aggregate-section' }, [summary, body]);
     });
-    renderDiv.replaceChildren(ctrlBar, ...sections);
+    const currentLabel = el('div', { class: 'aggregate-current-label' }, ['— current —']);
+    const currentBody = el('div', { class: 'inline-render' });
+    currentBody.innerHTML = marked.parse(content);
+    renderDiv.replaceChildren(ctrlBar, ...sections, currentLabel, currentBody);
   } else {
     renderDiv.innerHTML = marked.parse(content);
   }
@@ -865,6 +894,23 @@ let _conflictServerMtime = 0;
 let _onConflictKeep = null;
 let _onConflictDiscard = null;
 
+function renderConflictDiff(myContent, theirContent) {
+  const diffView = document.getElementById('conflict-diff-view');
+  const hunks = lineDiff(theirContent, myContent);
+  const hasChanges = hunks.some(h => h.type !== 'same');
+  if (!hasChanges) {
+    diffView.innerHTML = '<div class="diff-empty">No differences</div>';
+    return;
+  }
+  const lines = hunks.map(h => {
+    const div = document.createElement('div');
+    div.className = 'diff-line diff-' + h.type;
+    div.textContent = (h.type === 'add' ? '+ ' : h.type === 'remove' ? '- ' : '  ') + h.line;
+    return div;
+  });
+  diffView.replaceChildren(...lines);
+}
+
 function openConflictModal(myContent, theirContent, serverMtime, onKeep, onDiscard) {
   _conflictServerMtime = serverMtime;
   _onConflictKeep = onKeep;
@@ -872,6 +918,9 @@ function openConflictModal(myContent, theirContent, serverMtime, onKeep, onDisca
   document.getElementById('conflict-mine').value = myContent;
   document.getElementById('conflict-mine').readOnly = true;
   document.getElementById('conflict-theirs').value = theirContent;
+  document.getElementById('conflict-diff-view').style.display = '';
+  document.getElementById('conflict-panes').style.display = 'none';
+  renderConflictDiff(myContent, theirContent);
   document.getElementById('conflict-footer-default').style.display = '';
   document.getElementById('conflict-footer-merge').style.display = 'none';
   document.getElementById('conflict-modal-overlay').classList.add('open');
@@ -894,6 +943,8 @@ function discardMine() {
 }
 
 function openBoth() {
+  document.getElementById('conflict-diff-view').style.display = 'none';
+  document.getElementById('conflict-panes').style.display = '';
   document.getElementById('conflict-mine').readOnly = false;
   document.getElementById('conflict-mine').focus();
   document.getElementById('conflict-footer-default').style.display = 'none';

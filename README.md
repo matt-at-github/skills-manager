@@ -62,8 +62,16 @@ Two configuration surfaces, both following the `.env` convention (example tracke
 ```
 
 - **`files[]`** — exact paths of singleton files (instruction files, settings).
-- **`directories[]`** — directory roots scanned for plural/user-generated content (skills, agents, commands), with the exact extensions to surface.
+- **`directories[]`** — directory roots scanned for plural/user-generated content (skills, agents, commands), with the exact extensions to surface. Each entry accepts an optional **`tags`** array to label every file in that directory (e.g. `"tags": ["claude"]`).
 - **`projectRoots[]`** — directories where you can create or delete `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` from the UI. Empty by default — add your project roots here (or via the in-UI config panel).
+- **`fileTags`** — optional top-level object mapping individual file paths to tag arrays, for tagging singleton `files[]` entries: `{ "~/CLAUDE.md": ["claude"] }`.
+- **`instructionFileNames`** — optional array of additional instruction filenames beyond `CLAUDE.md` and `AGENTS.md` to treat as instruction files.
+
+### Tag filtering
+
+Tags appear as purple chips above the file tree. Clicking a chip filters the tree to files that carry that tag. Multiple active chips use **OR** logic — a file matches if it has any of the selected tags. Click a chip again (or the × button) to deactivate it.
+
+Default tags used in `config.example.json`: `claude`, `cursor`, `continue`, `gemini`, `aider`. Add your own by editing `config.json` directly or via the config panel.
 
 Edits to `config.json` can be made via the in-UI config panel (changes survive `git pull` because `config.json` is gitignored).
 
@@ -91,7 +99,16 @@ CRUD scope is intentionally narrow:
 - Delete defaults to OS trash (recoverable). Hard delete requires type-to-confirm.
 - No rename / move in v1.
 
-External edits are detected on save via mtime comparison: stale saves get a 409 with a side-by-side diff modal so you can reconcile by hand.
+External edits are detected on save via mtime comparison: stale saves get a 409 with a diff modal so you can reconcile by hand.
+
+### Reverse index ("Used by")
+
+When you open a file inline, the **Used by** panel lists every other tracked file that references the current file by name. Matching rules:
+
+- The current filename (without extension) is the search term — e.g. `my-skill.md` → search term `my-skill`.
+- Match: the term appears in a line with word-boundary delimiters (`(?<![\w-])term(?![\w-])`, case-insensitive). Hyphens are not treated as word boundaries, so `my-skill` does not match inside `use-my-skill-here`.
+- Only the first match per line is reported; snippet is truncated at 120 characters.
+- No frontmatter awareness — frontmatter lines are scanned like any other line. `name: my-skill` in a frontmatter block counts as a reference. This is an accepted false-positive trade-off for simplicity.
 
 ## Development
 

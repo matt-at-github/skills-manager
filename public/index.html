@@ -123,13 +123,16 @@
       <button id="conflict-modal-close" onclick="closeConflictModal()">✕</button>
     </div>
     <div id="conflict-modal-body">
-      <div class="conflict-pane">
-        <div class="conflict-pane-label">Your changes</div>
-        <textarea id="conflict-mine" spellcheck="false"></textarea>
-      </div>
-      <div class="conflict-pane">
-        <div class="conflict-pane-label">Current on disk</div>
-        <textarea id="conflict-theirs" spellcheck="false" readonly></textarea>
+      <div id="conflict-diff-view" class="conflict-diff-view"></div>
+      <div id="conflict-panes" style="display:none">
+        <div class="conflict-pane">
+          <div class="conflict-pane-label">Your changes</div>
+          <textarea id="conflict-mine" spellcheck="false"></textarea>
+        </div>
+        <div class="conflict-pane">
+          <div class="conflict-pane-label">Current on disk</div>
+          <textarea id="conflict-theirs" spellcheck="false" readonly></textarea>
+        </div>
       </div>
     </div>
     <div id="conflict-modal-footer">

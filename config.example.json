@@ -8,9 +8,21 @@
     "~/.claude/settings.json"
   ],
   "directories": [
-    { "path": "~/.claude/skills", "extensions": [".md"] },
-    { "path": "~/.claude/agents", "extensions": [".md"] },
-    { "path": "~/.claude/commands", "extensions": [".md"] }
+    { "path": "~/.claude/skills", "extensions": [".md"], "tags": ["claude"] },
+    { "path": "~/.claude/agents", "extensions": [".md"], "tags": ["claude"] },
+    { "path": "~/.claude/commands", "extensions": [".md"], "tags": ["claude"] },
+    { "path": "~/.cursor/rules", "extensions": [".mdc", ".md"], "tags": ["cursor"] },
+    { "path": "~/.continue/config", "extensions": [".md", ".yaml", ".json"], "tags": ["continue"] },
+    { "path": "~/.gemini", "extensions": [".md"], "tags": ["gemini"] },
+    { "path": "~/.aider", "extensions": [".md", ".conf"], "tags": ["aider"] }
   ],
+  "fileTags": {
+    "~/CLAUDE.md": ["claude"],
+    "~/AGENTS.md": ["claude"],
+    "~/GEMINI.md": ["gemini"],
+    "~/.claude/CLAUDE.md": ["claude"],
+    "~/.claude.json": ["claude"],
+    "~/.claude/settings.json": ["claude"]
+  },
   "projectRoots": []
 }
