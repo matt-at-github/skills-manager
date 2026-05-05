@@ -54,6 +54,11 @@ async function walkInstructionFiles(dir, instrNames, out = []) {
   return out;
 }
 
+function estimateTokens(text) {
+  if (!text) return 0;
+  return Math.round(text.trim().split(/\s+/).filter(Boolean).length * 1.3);
+}
+
 const PORT = Number(process.env.SKILL_EDITOR_PORT ?? 7842);
 const LOG_LEVEL = process.env.SKILL_EDITOR_LOG_LEVEL ?? "info";
 const log = createLogger(LOG_LEVEL);
@@ -222,6 +227,15 @@ async function handleFiles(req, res, config) {
       const dirMatch = dirTagMap.find((d) => f.path === d.real || f.path.startsWith(d.real + path.sep));
       f.tags = dirMatch ? dirMatch.tags : [];
     }
+    // Annotate token counts
+    await Promise.all(files.map(async (f) => {
+      try {
+        const content = await fs.readFile(f.path, "utf8");
+        f.tokens = estimateTokens(content);
+      } catch {
+        f.tokens = 0;
+      }
+    }));
     writeJson(res, 200, { files, projectRoots: resolvedRoots, instructionNames: [...instrNames], fileTags, directoryTags: dirTagMap });
   } catch (err) {
     log.error("scan failed", err);

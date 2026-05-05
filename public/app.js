@@ -143,7 +143,8 @@ function renderFileRow(file) {
   const dirPath = file.relPath.slice(0, file.relPath.lastIndexOf('/') + 1);
   const pathSpan = el('span', { class: 'file-full-path' }, [dirPath]);
   const nameGroup = el('span', { class: 'file-name-group' }, [badgeSpan, nameSpan, pathSpan]);
-  const tokenBadge = el('span', { class: 'token-badge' });
+  const tokenBadge = el('span', { class: 'token-badge' + (file.tokens != null ? ' loaded' : '') },
+    file.tokens != null ? ['~' + file.tokens + ' tokens'] : []);
   const editModeBtn = el('button', { class: 'btn inline-edit-mode-btn', title: 'Edit inline' }, ['✎']);
   const renderModeBtn = el('button', { class: 'btn inline-render-mode-btn', title: 'Preview' }, ['👁']);
   const diffModeBtn = el('button', { class: 'btn inline-diff-mode-btn', title: 'Diff' }, ['±']);
@@ -688,6 +689,7 @@ async function openFileEditor(name, filePath, prefillContent = null, prefillMtim
     const data = await loadFile(filePath);
     _lastMtime = data.mtime;
     document.getElementById('skill-modal-textarea').value = data.content;
+    setModalTokenBadge(data.content);
     status.textContent = '';
     document.querySelector('.modal-btn-save').disabled = false;
     document.getElementById('skill-modal-textarea').focus();
@@ -708,6 +710,13 @@ async function openFileEditor(name, filePath, prefillContent = null, prefillMtim
   }
 }
 
+function setModalTokenBadge(content) {
+  const badge = document.getElementById('skill-modal-tokens');
+  if (!badge) return;
+  badge.textContent = '~' + calculateTokens(content) + ' tokens';
+  badge.classList.add('loaded');
+}
+
 function closeSkillEditor() {
   document.getElementById('skill-modal-overlay').classList.remove('open');
   set404Actions(false);
@@ -721,6 +730,8 @@ function closeSkillEditor() {
   if (pvBtn) pvBtn.textContent = '👁 Preview';
   const ctxBtn = document.getElementById('modal-fullctx-btn');
   if (ctxBtn) { ctxBtn.classList.remove('mode-active'); ctxBtn.textContent = '⛶ Full Context'; }
+  const tokenBadge = document.getElementById('skill-modal-tokens');
+  if (tokenBadge) { tokenBadge.textContent = ''; tokenBadge.classList.remove('loaded'); }
 }
 
 function renderModalPreviewContent() {
@@ -798,6 +809,7 @@ async function saveSkill() {
   try {
     const data = await saveFile(_currentPath, content, _lastMtime);
     _lastMtime = data.mtime;
+    setModalTokenBadge(content);
     status.style.color = '#3fb950';
     status.textContent = 'saved ✓';
     setTimeout(() => { status.textContent = ''; status.style.color = ''; }, 2000);
