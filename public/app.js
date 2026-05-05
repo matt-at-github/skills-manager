@@ -24,6 +24,11 @@ function calculateTokens(text) {
   return Math.round(text.trim().split(/\s+/).filter(Boolean).length * 1.3);
 }
 
+function fmtTokens(n) {
+  if (n >= 1000) return '~' + Math.round(n / 1000) + 'k tokens';
+  return '~' + n + ' tokens';
+}
+
 function lineDiff(oldText, newText) {
   const a = oldText.split('\n'), b = newText.split('\n');
   const m = a.length, n = b.length;
@@ -144,7 +149,7 @@ function renderFileRow(file) {
   const pathSpan = el('span', { class: 'file-full-path' }, [dirPath]);
   const nameGroup = el('span', { class: 'file-name-group' }, [badgeSpan, nameSpan, pathSpan]);
   const tokenBadge = el('span', { class: 'token-badge' + (file.tokens != null ? ' loaded' : '') },
-    file.tokens != null ? ['~' + file.tokens + ' tokens'] : []);
+    file.tokens != null ? [fmtTokens(file.tokens)] : []);
   const editModeBtn = el('button', { class: 'btn inline-edit-mode-btn', title: 'Edit inline' }, ['✎']);
   const renderModeBtn = el('button', { class: 'btn inline-render-mode-btn', title: 'Preview' }, ['👁']);
   const diffModeBtn = el('button', { class: 'btn inline-diff-mode-btn', title: 'Diff' }, ['±']);
@@ -305,7 +310,7 @@ function renderFileRow(file) {
       mtime = data.mtime;
       savedContent = data.content;
       textarea.value = data.content;
-      tokenBadge.textContent = '~' + calculateTokens(data.content) + ' tokens';
+      tokenBadge.textContent = fmtTokens(calculateTokens(data.content));
       tokenBadge.classList.add('loaded');
       setStatus('');
       setDirty(false);
@@ -343,7 +348,7 @@ function renderFileRow(file) {
       const data = await saveFile(file.path, content, mtime);
       mtime = data.mtime;
       savedContent = content;
-      tokenBadge.textContent = '~' + calculateTokens(content) + ' tokens';
+      tokenBadge.textContent = fmtTokens(calculateTokens(content));
       tokenBadge.classList.add('loaded');
       _usedByCache = null;
       setDirty(false);
@@ -739,7 +744,7 @@ async function openFileEditor(name, filePath, prefillContent = null, prefillMtim
 function setModalTokenBadge(content, precomputed) {
   const badge = document.getElementById('skill-modal-tokens');
   if (!badge) return;
-  badge.textContent = '~' + (precomputed ?? calculateTokens(content)) + ' tokens';
+  badge.textContent = fmtTokens(precomputed ?? calculateTokens(content));
   badge.classList.add('loaded');
   badge.classList.toggle('token-badge-total', precomputed != null);
 }
@@ -774,7 +779,7 @@ function renderModalPreviewContent() {
     collapseAll.addEventListener('click', () => renderDiv.querySelectorAll('.aggregate-section').forEach(d => d.open = false));
     const sections = _aggregateCache.map(({ path: p, content: c }) => {
       const editBtn = el('button', { class: 'btn aggregate-edit-btn', title: 'Edit' }, ['✎']);
-      const tokenChip = el('span', { class: 'token-badge loaded aggregate-token-chip' }, ['~' + calculateTokens(c ?? '') + ' tokens']);
+      const tokenChip = el('span', { class: 'token-badge loaded aggregate-token-chip' }, [fmtTokens(calculateTokens(c ?? ''))]);
       const pathSpan = el('span', { class: 'aggregate-path' }, [p]);
       const summary = el('summary', { class: 'aggregate-summary' }, [pathSpan, tokenChip, editBtn]);
       const body = el('div', { class: 'inline-render aggregate-body' });
@@ -850,7 +855,7 @@ function renderModalPreviewContent() {
 
     const editCurrentBtn = el('button', { class: 'btn aggregate-edit-btn', title: 'Edit current file' }, ['✎']);
     editCurrentBtn.addEventListener('click', toggleModalPreview);
-    const currentTokenChip = el('span', { class: 'token-badge loaded aggregate-token-chip' }, ['~' + calculateTokens(content) + ' tokens']);
+    const currentTokenChip = el('span', { class: 'token-badge loaded aggregate-token-chip' }, [fmtTokens(calculateTokens(content))]);
     const currentLabelText = el('span', { class: 'aggregate-path' }, ['— current —']);
     const currentLabel = el('div', { class: 'aggregate-current-label' }, [currentLabelText, currentTokenChip, editCurrentBtn]);
     const currentBody = el('div', { class: 'inline-render aggregate-body' });
