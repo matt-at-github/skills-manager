@@ -741,6 +741,7 @@ function setModalTokenBadge(content, precomputed) {
   if (!badge) return;
   badge.textContent = '~' + (precomputed ?? calculateTokens(content)) + ' tokens';
   badge.classList.add('loaded');
+  badge.classList.toggle('token-badge-total', precomputed != null);
 }
 
 function closeSkillEditor() {

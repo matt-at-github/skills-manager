@@ -122,6 +122,7 @@
     visibility: hidden;
   }
   .token-badge.loaded { visibility: visible; }
+  .token-badge.token-badge-total { background: #3d1a2e; color: #f472b6; border-color: #db2777; }
   .file-name { font-size: 0.82rem; font-weight: 600; }
   .file-full-path { font-size: 0.72rem; color: #484f58; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .fn-claude     { color: #58a6ff; }
