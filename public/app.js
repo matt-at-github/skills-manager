@@ -780,7 +780,9 @@ function toggleModalPreview() {
 async function toggleFullContext() {
   const btn = document.getElementById('modal-fullctx-btn');
   const renderDiv = document.getElementById('skill-modal-render');
-  const isPreviewing = renderDiv.style.display !== 'none';
+  const textarea = document.getElementById('skill-modal-textarea');
+  const pvBtn = document.querySelector('.modal-btn-preview');
+
   if (!_aggregateCache) {
     btn.textContent = '⛶ loading…';
     btn.disabled = true;
@@ -792,10 +794,16 @@ async function toggleFullContext() {
     }
     btn.disabled = false;
   }
+
   _fullContextOn = !_fullContextOn;
   btn.classList.toggle('mode-active', _fullContextOn);
   btn.textContent = '⛶ Full Context';
-  if (isPreviewing) renderModalPreviewContent();
+
+  // Always enter preview mode so the context is visible
+  renderModalPreviewContent();
+  renderDiv.style.display = '';
+  textarea.style.display = 'none';
+  pvBtn.textContent = '✎ Edit';
 }
 
 async function saveSkill() {
