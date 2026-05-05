@@ -1323,28 +1323,33 @@ document.addEventListener('DOMContentLoaded', function () {
   handle.addEventListener('mousedown', (e) => {
     e.preventDefault();
     const rect = modal.getBoundingClientRect();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startW = rect.width;
+    const startH = rect.height;
+    const centerX = rect.left + startW / 2;
+    const centerY = rect.top  + startH / 2;
 
-    // Freeze position so flex re-centering doesn't shift the left/top edge mid-drag
     modal.style.position = 'fixed';
-    modal.style.top = rect.top + 'px';
-    modal.style.left = rect.left + 'px';
     modal.style.margin = '0';
 
     function onMove(e) {
-      modal.style.width  = Math.max(320, e.clientX - rect.left) + 'px';
-      modal.style.height = Math.max(200, e.clientY - rect.top)  + 'px';
+      const w = Math.max(320, startW + 2 * (e.clientX - startX));
+      const h = Math.max(200, startH + 2 * (e.clientY - startY));
+      modal.style.width  = w + 'px';
+      modal.style.height = h + 'px';
+      modal.style.left   = (centerX - w / 2) + 'px';
+      modal.style.top    = (centerY - h / 2) + 'px';
     }
 
     function onUp() {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
-      // Restore flex layout, keep explicit size
       modal.style.position = '';
       modal.style.top = '';
       modal.style.left = '';
       modal.style.margin = '';
       saveSize();
-      // Swallow the click that would fire on the overlay and close the modal
       window.addEventListener('click', (e) => e.stopPropagation(), { capture: true, once: true });
     }
 
