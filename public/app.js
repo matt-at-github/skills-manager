@@ -859,6 +859,7 @@ function renderModalPreviewContent() {
     renderDiv.replaceChildren(ctrlBar, ...sections, currentSection);
   } else {
     renderDiv.innerHTML = marked.parse(content);
+    setModalTokenBadge(content);
   }
 }
 
