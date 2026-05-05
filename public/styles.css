@@ -315,7 +315,9 @@
   .aggregate-ctrl-btn { background: #161b22; color: #8b949e; border: 1px solid #30363d; }
   .aggregate-ctrl-btn:hover { color: #c9d1d9; border-color: #6e7681; }
   .aggregate-section { border: 1px solid #21262d; border-radius: 6px; margin-bottom: 8px; overflow: hidden; }
-  .aggregate-summary { padding: 6px 10px; font-size: 0.72rem; color: #484f58; cursor: pointer; user-select: none; list-style: none; }
+  .aggregate-summary { padding: 6px 10px; font-size: 0.72rem; color: #484f58; cursor: pointer; user-select: none; list-style: none; display: flex; align-items: center; gap: 6px; }
+  .aggregate-path { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .aggregate-token-chip { flex-shrink: 0; }
   .aggregate-summary:hover { color: #8b949e; }
   .aggregate-summary::before { content: '▶ '; font-size: 0.6rem; }
   .aggregate-section[open] > .aggregate-summary::before { content: '▼ '; }

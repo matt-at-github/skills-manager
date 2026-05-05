@@ -773,7 +773,9 @@ function renderModalPreviewContent() {
     collapseAll.addEventListener('click', () => renderDiv.querySelectorAll('.aggregate-section').forEach(d => d.open = false));
     const sections = _aggregateCache.map(({ path: p, content: c }) => {
       const editBtn = el('button', { class: 'btn aggregate-edit-btn', title: 'Edit' }, ['✎']);
-      const summary = el('summary', { class: 'aggregate-summary' }, [p, editBtn]);
+      const tokenChip = el('span', { class: 'token-badge loaded aggregate-token-chip' }, ['~' + calculateTokens(c ?? '') + ' tokens']);
+      const pathSpan = el('span', { class: 'aggregate-path' }, [p]);
+      const summary = el('summary', { class: 'aggregate-summary' }, [pathSpan, tokenChip, editBtn]);
       const body = el('div', { class: 'inline-render aggregate-body' });
       body.innerHTML = marked.parse(c ?? '');
 
@@ -847,7 +849,8 @@ function renderModalPreviewContent() {
 
     const editCurrentBtn = el('button', { class: 'btn aggregate-edit-btn', title: 'Edit current file' }, ['✎']);
     editCurrentBtn.addEventListener('click', toggleModalPreview);
-    const currentLabel = el('div', { class: 'aggregate-current-label' }, ['— current —', editCurrentBtn]);
+    const currentTokenChip = el('span', { class: 'token-badge loaded aggregate-token-chip' }, ['~' + calculateTokens(content) + ' tokens']);
+    const currentLabel = el('div', { class: 'aggregate-current-label' }, ['— current —', currentTokenChip, editCurrentBtn]);
     const currentBody = el('div', { class: 'inline-render aggregate-body' });
     currentBody.innerHTML = marked.parse(content);
     const currentSection = el('div', { class: 'aggregate-current-section' }, [currentLabel, currentBody]);
