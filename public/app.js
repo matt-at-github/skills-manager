@@ -1293,7 +1293,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 // Modal resize persistence
-(function () {
+document.addEventListener('DOMContentLoaded', function () {
   const modal = document.getElementById('skill-modal');
   const STORAGE_KEY = 'skillModalSize';
 
@@ -1319,7 +1319,7 @@ document.addEventListener('visibilitychange', () => {
   modal.addEventListener('mouseup', () => {
     if (modal.style.width || modal.style.height) saveSize();
   });
-})();
+});
 
 // Init
 checkServer();
