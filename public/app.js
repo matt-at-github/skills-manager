@@ -17,10 +17,32 @@ let isCompactMode = true;
 let _projectRoots = [];
 let _lastFiles = [];
 let _instructionNames = ['CLAUDE.md', 'AGENTS.md'];
+let _activeTags = new Set();
 
 function calculateTokens(text) {
   if (!text) return 0;
   return Math.round(text.trim().split(/\s+/).filter(Boolean).length * 1.3);
+}
+
+function lineDiff(oldText, newText) {
+  const a = oldText.split('\n'), b = newText.split('\n');
+  const m = a.length, n = b.length;
+  const dp = Array.from({length: m + 1}, () => new Array(n + 1).fill(0));
+  for (let i = m - 1; i >= 0; i--)
+    for (let j = n - 1; j >= 0; j--)
+      dp[i][j] = a[i] === b[j] ? dp[i+1][j+1] + 1 : Math.max(dp[i+1][j], dp[i][j+1]);
+  const result = [];
+  let i = 0, j = 0;
+  while (i < m || j < n) {
+    if (i < m && j < n && a[i] === b[j]) {
+      result.push({type: 'same', line: a[i]}); i++; j++;
+    } else if (j < n && (i >= m || dp[i+1] && dp[i+1][j] >= (dp[i][j+1] ?? 0))) {
+      result.push({type: 'add', line: b[j]}); j++;
+    } else {
+      result.push({type: 'remove', line: a[i]}); i++;
+    }
+  }
+  return result;
 }
 
 function makeFolder(name, fullRelPath, isProjectRoot) {
@@ -124,8 +146,9 @@ function renderFileRow(file) {
   const tokenBadge = el('span', { class: 'token-badge' });
   const editModeBtn = el('button', { class: 'btn inline-edit-mode-btn', title: 'Edit inline' }, ['✎']);
   const renderModeBtn = el('button', { class: 'btn inline-render-mode-btn', title: 'Preview' }, ['👁']);
+  const diffModeBtn = el('button', { class: 'btn inline-diff-mode-btn', title: 'Diff' }, ['±']);
   const popoutBtn = el('button', { class: 'btn inline-popout-btn', title: 'Open in popup editor' }, ['↗']);
-  const rowChildren = [nameGroup, tokenBadge, editModeBtn, renderModeBtn, popoutBtn];
+  const rowChildren = [nameGroup, tokenBadge, editModeBtn, renderModeBtn, diffModeBtn, popoutBtn];
 
   const delBtn = el('button', { class: 'btn instr-delete-btn', title: 'Delete ' + name }, ['🗑']);
   delBtn.addEventListener('click', (e) => { e.stopPropagation(); openDeleteModal(file.path); });
@@ -139,17 +162,20 @@ function renderFileRow(file) {
   // Inline editor
   const textarea = el('textarea', { class: 'inline-textarea', spellcheck: 'false' });
   const renderDiv = el('div', { class: 'inline-render' });
+  const diffDiv = el('div', { class: 'inline-diff' });
   const statusSpan = el('span', { class: 'inline-status' });
   const saveBtn = el('button', { class: 'btn inline-save-btn' }, ['Save']);
   saveBtn.disabled = true;
+  const usedByDiv = el('div', { class: 'used-by-panel' });
   const footer = el('div', { class: 'inline-footer' }, [statusSpan, saveBtn]);
-  const inlineEditor = el('div', { class: 'inline-editor' }, [renderDiv, textarea, footer]);
+  const inlineEditor = el('div', { class: 'inline-editor' }, [renderDiv, diffDiv, textarea, usedByDiv, footer]);
 
   // Per-instance state
   let mtime = 0;
   let dirty = false;
   let inEditMode = false;
   let savedContent = '';
+  let _usedByCache = null;
 
   function setStatus(text, color = '') {
     statusSpan.textContent = text;
@@ -185,25 +211,78 @@ function renderFileRow(file) {
       renderDiv.innerHTML = marked.parse(content ?? '');
     }
     renderDiv.style.display = '';
+    diffDiv.style.display = 'none';
     textarea.style.display = 'none';
     editModeBtn.classList.remove('mode-active');
     renderModeBtn.classList.add('mode-active');
+    diffModeBtn.classList.remove('mode-active');
     saveBtn.style.display = 'none';
     inEditMode = false;
   }
 
   function showEdit() {
     renderDiv.style.display = 'none';
+    diffDiv.style.display = 'none';
     textarea.style.display = '';
     editModeBtn.classList.add('mode-active');
     renderModeBtn.classList.remove('mode-active');
+    diffModeBtn.classList.remove('mode-active');
     saveBtn.style.display = '';
     autoResize();
     textarea.focus();
     inEditMode = true;
   }
 
+  function renderDiff() {
+    const hunks = lineDiff(savedContent, textarea.value);
+    const hasChanges = hunks.some(h => h.type !== 'same');
+    if (!hasChanges) {
+      diffDiv.innerHTML = '<div class="diff-empty">No pending changes</div>';
+      return;
+    }
+    const lines = hunks.map(h => {
+      const div = document.createElement('div');
+      div.className = 'diff-line diff-' + h.type;
+      div.textContent = (h.type === 'add' ? '+ ' : h.type === 'remove' ? '- ' : '  ') + h.line;
+      return div;
+    });
+    diffDiv.replaceChildren(...lines);
+  }
+
+  function showDiff() {
+    renderDiv.style.display = 'none';
+    textarea.style.display = 'none';
+    diffDiv.style.display = '';
+    editModeBtn.classList.remove('mode-active');
+    renderModeBtn.classList.remove('mode-active');
+    diffModeBtn.classList.add('mode-active');
+    saveBtn.style.display = '';
+    renderDiff();
+    inEditMode = false;
+  }
+
   function showHeaderBtns(_visible) { /* visibility handled by CSS hover/expanded */ }
+
+  async function loadUsedBy() {
+    if (_usedByCache !== null) return;
+    try {
+      const r = await fetch('/reverse-index?path=' + encodeURIComponent(file.path));
+      _usedByCache = r.ok ? await r.json() : [];
+    } catch { _usedByCache = []; }
+    if (_usedByCache.length === 0) { usedByDiv.style.display = 'none'; return; }
+    const heading = el('div', { class: 'used-by-heading' }, ['Used by']);
+    const rows = _usedByCache.map(ref => {
+      const row = el('div', { class: 'used-by-row' }, [
+        el('span', { class: 'used-by-path' }, [ref.relPath]),
+        el('span', { class: 'used-by-line' }, [`:${ref.line}`]),
+        el('span', { class: 'used-by-snippet' }, [ref.snippet]),
+      ]);
+      row.addEventListener('click', () => openFileEditor(ref.relPath.split('/').pop(), ref.path));
+      return row;
+    });
+    usedByDiv.replaceChildren(heading, ...rows);
+    usedByDiv.style.display = '';
+  }
 
   async function openInline() {
     if (!serverOnline) { alert('Start the skills-manager server first:\n\nnpm start'); return; }
@@ -228,6 +307,7 @@ function renderFileRow(file) {
       setStatus('');
       setDirty(false);
       showRender(data.content);
+      loadUsedBy();
     } catch (e) {
       if (e.status === 404) { setStatus('File not found on disk.', '#f85149'); return; }
       if (e.status === 403) { setStatus('Access denied.', '#f85149'); return; }
@@ -318,6 +398,8 @@ function renderFileRow(file) {
   saveBtn.addEventListener('click', doSave);
   editModeBtn.addEventListener('click', (e) => { e.stopPropagation(); showEdit(); });
   renderModeBtn.addEventListener('click', (e) => { e.stopPropagation(); showRender(textarea.value); });
+  diffModeBtn.addEventListener('click', (e) => { e.stopPropagation(); showDiff(); });
+  diffDiv.style.display = 'none';
   popoutBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     openFileEditor(name, file.path, inEditMode ? textarea.value : null, inEditMode ? mtime : null);
@@ -419,18 +501,41 @@ function renderCompactChain(startNode) {
   return wrapper;
 }
 
+function renderTagChips(files) {
+  const allTags = new Set();
+  for (const f of files) for (const t of (f.tags ?? [])) allTags.add(t);
+  const bar = document.getElementById('tag-filter-bar');
+  if (!bar) return;
+  bar.replaceChildren();
+  if (allTags.size === 0) { bar.style.display = 'none'; return; }
+  bar.style.display = '';
+  const clearBtn = el('span', { class: 'tag-chip tag-chip-clear' }, ['✕ clear']);
+  clearBtn.addEventListener('click', () => { _activeTags.clear(); renderTagChips(files); renderTree(files, _projectRoots); });
+  bar.appendChild(clearBtn);
+  for (const tag of [...allTags].sort()) {
+    const chip = el('span', { class: 'tag-chip' + (_activeTags.has(tag) ? ' tag-chip-active' : '') }, [tag]);
+    chip.addEventListener('click', () => {
+      if (_activeTags.has(tag)) _activeTags.delete(tag); else _activeTags.add(tag);
+      renderTagChips(files);
+      renderTree(files, _projectRoots);
+    });
+    bar.appendChild(chip);
+  }
+}
+
 function renderTree(files, projectRoots = []) {
   _projectRoots = projectRoots;
   _lastFiles = files;
+  const filtered = _activeTags.size === 0 ? files : files.filter(f => (f.tags ?? []).some(t => _activeTags.has(t)));
   const tree = document.getElementById('tree');
   tree.replaceChildren();
 
-  if (files.length === 0 && projectRoots.length === 0) {
+  if (filtered.length === 0 && projectRoots.length === 0) {
     tree.appendChild(el('div', { class: 'tree-loading' }, ['No files found in allowlist.']));
     return;
   }
 
-  const root = buildFolderTree(files, projectRoots);
+  const root = buildFolderTree(filtered, projectRoots);
   const rootHeader = el('div', { class: 'dir-row', onclick: (e) => toggle(e.currentTarget) }, [
     el('span', { class: 'toggle-icon' }, ['▾']),
     el('span', { class: 'dir-label' }, [el('span', { class: 'dir-name' }, ['~'])]),
@@ -454,6 +559,7 @@ async function loadFiles() {
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const body = await r.json();
     _instructionNames = body.instructionNames ?? ['CLAUDE.md', 'AGENTS.md'];
+    renderTagChips(body.files);
     renderTree(body.files, body.projectRoots ?? []);
   } catch (e) {
     tree.replaceChildren(
@@ -893,17 +999,28 @@ function renderConfigBody() {
   );
 
   section('Directories', _cfg.directories,
-    (d, i) => el('div', { class: 'cfg-item' }, [
-      el('span', { class: 'cfg-item-text' }, [`${d.path}  ${d.extensions.join(', ')}`]),
-      el('button', { class: 'cfg-remove-btn', onclick: () => { _cfg.directories.splice(i, 1); renderConfigBody(); } }, ['✕']),
-    ]),
+    (d, i) => {
+      const tagsInput = el('input', { class: 'cfg-input cfg-input-sm cfg-tags-input', value: (d.tags ?? []).join(', '), placeholder: 'tags: claude, cursor…' });
+      tagsInput.addEventListener('change', () => {
+        _cfg.directories[i].tags = tagsInput.value.split(',').map(s => s.trim()).filter(Boolean);
+      });
+      return el('div', { class: 'cfg-item cfg-item-col' }, [
+        el('div', { class: 'cfg-item-row' }, [
+          el('span', { class: 'cfg-item-text' }, [`${d.path}  ${d.extensions.join(', ')}`]),
+          el('button', { class: 'cfg-remove-btn', onclick: () => { _cfg.directories.splice(i, 1); renderConfigBody(); } }, ['✕']),
+        ]),
+        tagsInput,
+      ]);
+    },
     [
       el('input', { class: 'cfg-input cfg-input-sm', id: 'cfg-dir-path', placeholder: 'path' }),
       el('input', { class: 'cfg-input cfg-input-sm', id: 'cfg-dir-exts', placeholder: '.md, .txt' }),
+      el('input', { class: 'cfg-input cfg-input-sm', id: 'cfg-dir-tags', placeholder: 'tags: claude, cursor…' }),
       el('button', { class: 'modal-btn cfg-add-btn', onclick: () => {
         const p = document.getElementById('cfg-dir-path').value.trim();
         const exts = document.getElementById('cfg-dir-exts').value.split(',').map((s) => s.trim()).filter(Boolean);
-        if (p && exts.length) { _cfg.directories.push({ path: p, extensions: exts }); renderConfigBody(); }
+        const tags = document.getElementById('cfg-dir-tags').value.split(',').map((s) => s.trim()).filter(Boolean);
+        if (p && exts.length) { _cfg.directories.push({ path: p, extensions: exts, tags }); renderConfigBody(); }
       }}, ['Add']),
     ]
   );
@@ -938,7 +1055,8 @@ async function openConfigPanel() {
     const data = await r.json();
     _cfg = {
       files: [...(data.files ?? [])],
-      directories: (data.directories ?? []).map((d) => ({ ...d, extensions: [...d.extensions] })),
+      directories: (data.directories ?? []).map((d) => ({ ...d, extensions: [...d.extensions], tags: [...(d.tags ?? [])] })),
+      fileTags: { ...(data.fileTags ?? {}) },
       projectRoots: [...(data.projectRoots ?? [])],
     };
     document.getElementById('config-modal-status').textContent = '';

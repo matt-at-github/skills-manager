@@ -45,6 +45,12 @@ export function validateConfig(obj) {
         );
       }
     }
+    if (d.tags !== undefined) {
+      if (!Array.isArray(d.tags)) throw new Error(`config.directories[${i}].tags must be an array`);
+      for (const [j, t] of d.tags.entries()) {
+        if (typeof t !== "string") throw new Error(`config.directories[${i}].tags[${j}] must be a string`);
+      }
+    }
   }
   if (!Array.isArray(obj.projectRoots)) {
     throw new Error("config.projectRoots must be an array");
@@ -61,6 +67,17 @@ export function validateConfig(obj) {
     for (const [i, n] of obj.instructionFileNames.entries()) {
       if (typeof n !== "string" || n.length === 0) {
         throw new Error(`config.instructionFileNames[${i}] must be a non-empty string`);
+      }
+    }
+  }
+  if (obj.fileTags !== undefined) {
+    if (typeof obj.fileTags !== "object" || Array.isArray(obj.fileTags)) {
+      throw new Error("config.fileTags must be an object");
+    }
+    for (const [k, v] of Object.entries(obj.fileTags)) {
+      if (!Array.isArray(v)) throw new Error(`config.fileTags["${k}"] must be an array`);
+      for (const [j, t] of v.entries()) {
+        if (typeof t !== "string") throw new Error(`config.fileTags["${k}"][${j}] must be a string`);
       }
     }
   }

@@ -207,7 +207,22 @@ async function handleFiles(req, res, config) {
         }
       }
     }
-    writeJson(res, 200, { files, projectRoots: resolvedRoots, instructionNames: [...instrNames] });
+    // Annotate files with tags from config
+    const fileTags = config.fileTags ?? {};
+    const dirTagMap = (config.directories ?? []).map((d) => ({
+      real: path.resolve(expandHome(d.path)),
+      tags: d.tags ?? [],
+    }));
+    for (const f of files) {
+      const expandedPath = expandHome(f.relPath.startsWith('~') ? f.relPath : f.path);
+      // Check fileTags first (exact match by expanded path)
+      const ftKey = Object.keys(fileTags).find((k) => expandHome(k) === f.path || expandHome(k) === expandedPath);
+      if (ftKey) { f.tags = fileTags[ftKey]; continue; }
+      // Fall back to directory tags
+      const dirMatch = dirTagMap.find((d) => f.path === d.real || f.path.startsWith(d.real + path.sep));
+      f.tags = dirMatch ? dirMatch.tags : [];
+    }
+    writeJson(res, 200, { files, projectRoots: resolvedRoots, instructionNames: [...instrNames], fileTags, directoryTags: dirTagMap });
   } catch (err) {
     log.error("scan failed", err);
     writeJson(res, 500, { error: "scan_failed" });
@@ -332,6 +347,45 @@ async function handleAggregate(req, res, guard) {
   writeJson(res, 200, results);
 }
 
+async function handleReverseIndex(req, res, config, guard) {
+  if (!guard) {
+    writeJson(res, 503, { error: "config_unavailable" });
+    return;
+  }
+  const url = new URL(req.url, "http://x");
+  const input = url.searchParams.get("path") ?? "";
+  const allowed = await guard.check(input, "read");
+  if (!allowed.ok) {
+    writeJson(res, 403, { error: allowed.reason });
+    return;
+  }
+  const targetName = path.basename(allowed.resolved, path.extname(allowed.resolved));
+  // Collect all readable files from config
+  const allFiles = [];
+  try { allFiles.push(...await scan(config)); } catch { /* ignore */ }
+  const results = [];
+  for (const f of allFiles) {
+    if (f.path === allowed.resolved) continue;
+    const ca = await guard.check(f.path, "read");
+    if (!ca.ok) continue;
+    let content;
+    try { const d = await read(ca.resolved); content = d.content; } catch { continue; }
+    const lines = content.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const wordBoundary = new RegExp(`(?<![\\w-])${escapeRegex(targetName)}(?![\\w-])`, "i");
+      if (wordBoundary.test(line)) {
+        results.push({ path: f.path, relPath: f.relPath, line: i + 1, snippet: line.trim().slice(0, 120) });
+      }
+    }
+  }
+  writeJson(res, 200, results);
+}
+
+function escapeRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function handleGetConfig(req, res, config) {
   if (!config) {
     writeJson(res, 503, { error: "config_unavailable" });
@@ -413,6 +467,10 @@ export function createServer({ port = PORT, config = null, guard = null, configP
     }
     if (req.method === "GET" && urlPath === "/aggregate") {
       handleAggregate(req, res, state.guard);
+      return;
+    }
+    if (req.method === "GET" && urlPath === "/reverse-index") {
+      handleReverseIndex(req, res, state.config, state.guard);
       return;
     }
     if (req.method === "GET") {
