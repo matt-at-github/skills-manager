@@ -1315,29 +1315,37 @@ document.addEventListener('DOMContentLoaded', function () {
     if (overlay.classList.contains('open')) applyStoredSize();
   }).observe(overlay, { attributeFilter: ['class'] });
 
-  // Custom resize handle — tracks raw mouse delta so centering doesn't drift
+  // Custom resize handle
   const handle = document.createElement('div');
   handle.className = 'modal-resize-handle';
   modal.appendChild(handle);
 
   handle.addEventListener('mousedown', (e) => {
     e.preventDefault();
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const startW = modal.offsetWidth;
-    const startH = modal.offsetHeight;
+    const rect = modal.getBoundingClientRect();
+
+    // Freeze position so flex re-centering doesn't shift the left/top edge mid-drag
+    modal.style.position = 'fixed';
+    modal.style.top = rect.top + 'px';
+    modal.style.left = rect.left + 'px';
+    modal.style.margin = '0';
 
     function onMove(e) {
-      const w = Math.max(320, startW + (e.clientX - startX));
-      const h = Math.max(200, startH + (e.clientY - startY));
-      modal.style.width = w + 'px';
-      modal.style.height = h + 'px';
+      modal.style.width  = Math.max(320, e.clientX - rect.left) + 'px';
+      modal.style.height = Math.max(200, e.clientY - rect.top)  + 'px';
     }
 
     function onUp() {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
+      // Restore flex layout, keep explicit size
+      modal.style.position = '';
+      modal.style.top = '';
+      modal.style.left = '';
+      modal.style.margin = '';
       saveSize();
+      // Swallow the click that would fire on the overlay and close the modal
+      window.addEventListener('click', (e) => e.stopPropagation(), { capture: true, once: true });
     }
 
     document.addEventListener('mousemove', onMove);
