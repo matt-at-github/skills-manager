@@ -736,10 +736,10 @@ async function openFileEditor(name, filePath, prefillContent = null, prefillMtim
   }
 }
 
-function setModalTokenBadge(content) {
+function setModalTokenBadge(content, precomputed) {
   const badge = document.getElementById('skill-modal-tokens');
   if (!badge) return;
-  badge.textContent = '~' + calculateTokens(content) + ' tokens';
+  badge.textContent = '~' + (precomputed ?? calculateTokens(content)) + ' tokens';
   badge.classList.add('loaded');
 }
 
@@ -842,12 +842,16 @@ function renderModalPreviewContent() {
 
       return el('details', { class: 'aggregate-section' }, [summary, body]);
     });
+    const totalTokens = _aggregateCache.reduce((sum, { content: c }) => sum + calculateTokens(c ?? ''), 0) + calculateTokens(content);
+    setModalTokenBadge(null, totalTokens);
+
     const editCurrentBtn = el('button', { class: 'btn aggregate-edit-btn', title: 'Edit current file' }, ['✎']);
     editCurrentBtn.addEventListener('click', toggleModalPreview);
     const currentLabel = el('div', { class: 'aggregate-current-label' }, ['— current —', editCurrentBtn]);
-    const currentBody = el('div', { class: 'inline-render' });
+    const currentBody = el('div', { class: 'inline-render aggregate-body' });
     currentBody.innerHTML = marked.parse(content);
-    renderDiv.replaceChildren(ctrlBar, ...sections, currentLabel, currentBody);
+    const currentSection = el('div', { class: 'aggregate-current-section' }, [currentLabel, currentBody]);
+    renderDiv.replaceChildren(ctrlBar, ...sections, currentSection);
   } else {
     renderDiv.innerHTML = marked.parse(content);
   }
