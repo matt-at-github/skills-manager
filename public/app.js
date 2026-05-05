@@ -751,10 +751,7 @@ function renderModalPreviewContent() {
       body.innerHTML = marked.parse(c ?? '');
       return el('details', { class: 'aggregate-section' }, [summary, body]);
     });
-    const currentLabel = el('div', { class: 'aggregate-current-label' }, ['— current —']);
-    const currentBody = el('div', { class: 'inline-render' });
-    currentBody.innerHTML = marked.parse(content);
-    renderDiv.replaceChildren(ctrlBar, ...sections, currentLabel, currentBody);
+    renderDiv.replaceChildren(ctrlBar, ...sections);
   } else {
     renderDiv.innerHTML = marked.parse(content);
   }
