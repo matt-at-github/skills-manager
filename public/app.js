@@ -772,12 +772,79 @@ function renderModalPreviewContent() {
     expandAll.addEventListener('click', () => renderDiv.querySelectorAll('.aggregate-section').forEach(d => d.open = true));
     collapseAll.addEventListener('click', () => renderDiv.querySelectorAll('.aggregate-section').forEach(d => d.open = false));
     const sections = _aggregateCache.map(({ path: p, content: c }) => {
-      const summary = el('summary', { class: 'aggregate-summary' }, [p]);
+      const editBtn = el('button', { class: 'btn aggregate-edit-btn', title: 'Edit' }, ['✎']);
+      const summary = el('summary', { class: 'aggregate-summary' }, [p, editBtn]);
       const body = el('div', { class: 'inline-render aggregate-body' });
       body.innerHTML = marked.parse(c ?? '');
+
+      editBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        editBtn.disabled = true;
+        let mtime;
+        try {
+          const d = await loadFile(p);
+          mtime = d.mtime;
+          const ta = el('textarea', { class: 'aggregate-textarea' });
+          ta.value = d.content;
+          const saveBtn = el('button', { class: 'btn aggregate-save-btn' }, ['Save']);
+          const cancelBtn = el('button', { class: 'btn aggregate-cancel-btn' }, ['Cancel']);
+          const btnRow = el('div', { class: 'aggregate-save-row' }, [saveBtn, cancelBtn]);
+
+          const showPreview = (text) => {
+            body.replaceChildren();
+            const div = el('div', { class: 'inline-render' });
+            div.innerHTML = marked.parse(text ?? '');
+            body.appendChild(div);
+            editBtn.disabled = false;
+          };
+
+          cancelBtn.addEventListener('click', () => showPreview(c));
+          saveBtn.addEventListener('click', async () => {
+            saveBtn.disabled = true;
+            try {
+              await saveFile(p, ta.value, mtime);
+              const entry = _aggregateCache.find(x => x.path === p);
+              if (entry) entry.content = ta.value;
+              c = ta.value;
+              showPreview(ta.value);
+            } catch (err) {
+              if (err.status === 409) {
+                saveBtn.disabled = false;
+                openConflictModal(
+                  ta.value,
+                  err.data.currentContent,
+                  err.data.currentMtime,
+                  async (resolved) => {
+                    const d2 = await saveFile(p, resolved, err.data.currentMtime);
+                    mtime = d2.mtime;
+                    const entry = _aggregateCache.find(x => x.path === p);
+                    if (entry) entry.content = resolved;
+                    c = resolved;
+                    showPreview(resolved);
+                  },
+                  (theirContent) => {
+                    ta.value = theirContent;
+                    mtime = err.data.currentMtime;
+                    saveBtn.disabled = false;
+                  }
+                );
+              } else {
+                saveBtn.disabled = false;
+              }
+            }
+          });
+
+          body.replaceChildren(ta, btnRow);
+        } catch {
+          editBtn.disabled = false;
+        }
+      });
+
       return el('details', { class: 'aggregate-section' }, [summary, body]);
     });
-    const currentLabel = el('div', { class: 'aggregate-current-label' }, ['— current —']);
+    const editCurrentBtn = el('button', { class: 'btn aggregate-edit-btn', title: 'Edit current file' }, ['✎']);
+    editCurrentBtn.addEventListener('click', toggleModalPreview);
+    const currentLabel = el('div', { class: 'aggregate-current-label' }, ['— current —', editCurrentBtn]);
     const currentBody = el('div', { class: 'inline-render' });
     currentBody.innerHTML = marked.parse(content);
     renderDiv.replaceChildren(ctrlBar, ...sections, currentLabel, currentBody);
