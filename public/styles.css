@@ -234,9 +234,11 @@
   #skill-modal-overlay.open { display: flex; }
   #skill-modal {
     background: #161b22; border: 1px solid #30363d; border-radius: 12px;
-    width: 760px; max-width: 95vw; height: 80vh; max-height: 88vh;
+    width: 760px; max-width: 98vw; height: 80vh; max-height: 96vh;
+    min-width: 320px; min-height: 200px;
     display: flex; flex-direction: column; overflow: hidden;
     box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+    resize: both;
   }
   #skill-modal-header {
     padding: 14px 16px 12px; border-bottom: 1px solid #21262d;

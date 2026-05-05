@@ -1292,6 +1292,35 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+// Modal resize persistence
+(function () {
+  const modal = document.getElementById('skill-modal');
+  const STORAGE_KEY = 'skillModalSize';
+
+  function applyStoredSize() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (saved?.width) modal.style.width = saved.width;
+      if (saved?.height) modal.style.height = saved.height;
+    } catch {}
+  }
+
+  function saveSize() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ width: modal.style.width, height: modal.style.height }));
+  }
+
+  // Restore size whenever the modal opens
+  const overlay = document.getElementById('skill-modal-overlay');
+  new MutationObserver(() => {
+    if (overlay.classList.contains('open')) applyStoredSize();
+  }).observe(overlay, { attributeFilter: ['class'] });
+
+  // Save after each resize drag ends
+  modal.addEventListener('mouseup', () => {
+    if (modal.style.width || modal.style.height) saveSize();
+  });
+})();
+
 // Init
 checkServer();
 loadFiles();
