@@ -138,6 +138,7 @@ async function handleRead(req, res, guard) {
   }
   try {
     const data = await read(allowed.resolved);
+    log.debug("read", relToHome(allowed.resolved));
     writeJson(res, 200, data);
   } catch (err) {
     if (err.code === "ENOENT") {
@@ -174,9 +175,11 @@ async function handleWrite(req, res, guard) {
   try {
     const result = await write(allowed.resolved, content, lastMtime);
     if (result.conflict) {
+      log.warn("write conflict", relToHome(allowed.resolved));
       writeJson(res, 409, { currentMtime: result.currentMtime, currentContent: result.currentContent });
       return;
     }
+    log.info("wrote", relToHome(allowed.resolved));
     writeJson(res, 200, { mtime: result.mtime });
   } catch (err) {
     log.error("write failed", err);
@@ -191,6 +194,7 @@ async function handleFiles(req, res, config) {
   }
   try {
     const files = await scan(config);
+    log.debug("scan found", files.length, "files");
     const seen = new Set(files.map((f) => f.path));
     const instrNames = getInstructionNames(config);
     const resolvedRoots = await resolveProjectRoots(config.projectRoots);
@@ -278,6 +282,7 @@ async function handleCreate(req, res, state) {
   try {
     await fs.writeFile(targetPath, "", "utf8");
     const st = await fs.stat(targetPath);
+    log.info("created", relToHome(targetPath));
     writeJson(res, 200, {
       path: targetPath,
       relPath: relToHome(targetPath),
@@ -318,6 +323,7 @@ async function handleDelete(req, res, state) {
     } else {
       await fs.unlink(allowed.resolved);
     }
+    log.info("deleted", `(${mode})`, relToHome(allowed.resolved));
     writeJson(res, 200, { ok: true });
   } catch (err) {
     log.error("delete failed", err);
@@ -433,6 +439,7 @@ async function handlePostConfig(req, res, state, configPath) {
   }
   state.guard = await createGuard(body);
   state.config = body;
+  log.info("config updated");
   writeJson(res, 200, { ok: true });
 }
 
@@ -440,6 +447,11 @@ export function createServer({ port = PORT, config = null, guard = null, configP
   const state = { config, guard };
   const expectedOrigin = `http://localhost:${port}`;
   return http.createServer((req, res) => {
+    const start = Date.now();
+    let statusCode = 200;
+    const origWriteHead = res.writeHead.bind(res);
+    res.writeHead = (code, ...args) => { statusCode = code; return origWriteHead(code, ...args); };
+    res.on("finish", () => log.info(req.method, (req.url ?? "/").split("?")[0], statusCode, `${Date.now() - start}ms`));
     log.debug(req.method, req.url);
     const sec = checkRequestSecurity(req, expectedOrigin);
     if (!sec.ok) {
@@ -499,13 +511,15 @@ export function createServer({ port = PORT, config = null, guard = null, configP
 
 export async function start({ port = PORT } = {}) {
   let config = null;
+  const configPath = getDefaultConfigPath();
+  log.info("loading config from", configPath);
   try {
     config = await loadDefaultConfig();
   } catch (err) {
     log.error("failed to load config", err);
     process.exit(1);
   }
-  const configPath = getDefaultConfigPath();
+  log.info("config loaded:", (config.directories ?? []).length, "director(ies),", (config.projectRoots ?? []).length, "project root(s)");
   const guard = await createGuard(config);
   const server = createServer({ port, config, guard, configPath });
   server.on("error", (err) => {
